@@ -1,98 +1,251 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import * as Location from 'expo-location';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, FlatList, Text, TextInput, TouchableOpacity } from 'react-native';
+
+const GOOGLE_PLACES_API_KEY = 'YOUR_GOOGLE_PLACES_API_KEY'; // Replace with your API key
+
+function usePlacesAutocomplete(query: string, location?: { lat: number; lng: number }) {
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!query) {
+      setSuggestions([]);
+      return;
+    }
+    setLoading(true);
+    let url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(query)}&key=${GOOGLE_PLACES_API_KEY}`;
+    url += '&types=geocode|establishment';
+    if (location) {
+      url += `&location=${location.lat},${location.lng}&radius=50000`;
+    }
+    fetch(url)
+      .then((res) => res.json())
+      .then((data) => setSuggestions(data.predictions || []))
+      .catch(() => setSuggestions([]))
+      .finally(() => setLoading(false));
+  }, [query, location]);
+
+  return { suggestions, loading };
+}
+
+
+
 import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+import { useNavigation } from '@react-navigation/native';
+import { ImageBackground } from 'expo-image';
+import React from 'react';
+import { StyleSheet, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-export default function HomeScreen() {
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+const Home = () => {
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+    const [currentLocation, setCurrentLocation] = useState<Location.LocationObject | null>(null);
+  const [pickup, setPickup] = useState('');
+  const [drop, setDrop] = useState('');
+  const [activeField, setActiveField] = useState<'pickup' | 'drop' | null>(null);
+
+  // Use current location for better suggestions
+  const latLng = currentLocation ? {
+    lat: currentLocation.coords.latitude,
+    lng: currentLocation.coords.longitude
+  } : undefined;
+  const { suggestions, loading } = usePlacesAutocomplete(activeField === 'pickup' ? pickup : drop, latLng);
+
+  useEffect(() => {
+    (async () => {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        return;
+      }
+      let location = await Location.getCurrentPositionAsync({});
+      setCurrentLocation(location);
+      console.log('User current location:', location);
+    })();
+  }, []);
+
+  // Helper to render suggestions for pickup or drop
+  const renderSuggestions = (field: 'pickup' | 'drop', value: string, setValue: (v: string) => void) => (
+    activeField === field && value.length > 0 ? (
+      <FlatList
+        data={suggestions}
+        keyExtractor={(item) => item.place_id}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            style={styles.suggestion}
+            onPress={() => {
+              setValue(item.description);
+              setActiveField(null);
+            }}
+          >
+            <Text>{item.description}</Text>
+          </TouchableOpacity>
+        )}
+        ListEmptyComponent={loading ? <ActivityIndicator /> : null}
+        style={styles.suggestionList}
+        keyboardShouldPersistTaps="handled"
+      />
+    ) : null
   );
+
+  const navigation: any = useNavigation();
+
+  const handleNavigateToProfile = () => {
+    //  navigation.reset({
+    //     index: 0,
+    //     routes: [{ name: 'screens/ProfileScreen' }] // ✅ must match <Stack.Screen name="auth" />
+    //   });
+    navigation.navigate('screens/ProfileScreen');
+  };
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <View style={styles.topBox}>
+        <ImageBackground
+          source={require('@/assets/images/homepage_bg.png')}
+          style={styles.topBoxBgImg}
+        >
+          <View style={styles.profileIconContainer} onTouchEnd={handleNavigateToProfile}>
+            <View style={styles.profileIcon}>
+              <MaterialIcons name="person" size={30} color="#fff" />
+            </View>
+          </View>
+          <View style={styles.locationContainer}>
+            <FlatList
+              data={[]}
+              ListHeaderComponent={
+                <ThemedView style={styles.container}>
+                  {/* <ThemedText type="title" style={styles.heading}>Book a Truck</ThemedText> */}
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter pickup location"
+                    value={pickup}
+                    onChangeText={setPickup}
+                    onFocus={() => setActiveField('pickup')}
+                  />
+                  {renderSuggestions('pickup', pickup, setPickup)}
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter drop location"
+                    value={drop}
+                    onChangeText={setDrop}
+                    onFocus={() => setActiveField('drop')}
+                  />
+                  {renderSuggestions('drop', drop, setDrop)}
+                </ThemedView>
+              }
+              keyboardShouldPersistTaps="handled"
+              style={{ flex: 1 }}
+            />
+          </View>
+        </ImageBackground>
+      </View>
+
+      {/* <View style={styles.callBtn}>
+        <TouchableOpacity>
+          <Text style={styles.heading}>Call </Text>
+        </TouchableOpacity>
+      </View> */}
+
+
+    </SafeAreaView>
+  )
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
+  container: {
+    flex: 1
+  },
+  heading: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 16,
+  },
+  text: {
+    fontSize: 16,
+    color: '#333',
+  },
+  topBox: {
+    width: '100%',
+    height: 360,
+    borderBottomEndRadius: 20,
+    borderBottomStartRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  callBtn: {
+    position: 'absolute',
+    bottom: 20,
+    right: 20,
+    backgroundColor: '#007BFF',
+    padding: 16,
+    borderRadius: 50,
+    elevation: 5,
+  },
+  topBoxBgImg: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'space-between',
+    padding: 20,
+    alignItems: 'center',
+  },
+  profileIconContainer: {
+    width: '100%',
+    height: 60,
+    justifyContent: 'center',
+    alignItems: 'flex-end',
+    // paddingInline: 20,
+
+  },
+  profileIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 30,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  locationContainer: {
+    backgroundColor: '#fff',
+    height: '60%',
+    width: '100%',
+    borderRadius: 10,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    padding: 20,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  input: {
+    flex: 1,
+    height: 50,
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    marginVertical: 10,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
+  suggestionList: {
     position: 'absolute',
+    top: 60,
+    left: 0,        
+    right: 0,
+    backgroundColor: 'white',
+    borderRadius: 8,
+    maxHeight: 200,
+    elevation: 5,
   },
-});
+  suggestion: {
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ccc',
+    backgroundColor: 'white',
+  },
+  suggestionText: {
+    fontSize: 16,
+    color: '#333',
+  },
+})
+
+export default Home;
