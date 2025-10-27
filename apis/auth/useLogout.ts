@@ -1,3 +1,4 @@
+import { useUserProfileStore } from "@/stores/userProfileStore";
 import { showMessage } from "@/utils/functions";
 import { useNavigation } from "@react-navigation/native";
 import { useMutation } from "@tanstack/react-query";
@@ -5,7 +6,8 @@ import authRequest from "../_helpers/api";
 import { deleteAccessToken, deleteRefreshToken } from "../_helpers/tokenStorage";
 
 export const useLogoutMutation = () => {
-  const navigation :any = useNavigation()
+  const navigation :any = useNavigation();
+  const { clearProfile } = useUserProfileStore();
   return useMutation({
     mutationFn: async () => {
       const { data } = await authRequest.post(
@@ -17,6 +19,7 @@ export const useLogoutMutation = () => {
       deleteAccessToken()
       deleteRefreshToken()
       showMessage("Logged Out Successfully!")
+      clearProfile();
       navigation.reset({ index: 0, routes: [{ name: 'auth/index' }] });
       
     },

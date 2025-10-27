@@ -1,251 +1,346 @@
-
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import * as Location from 'expo-location';
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Text, TextInput, TouchableOpacity } from 'react-native';
-
-const GOOGLE_PLACES_API_KEY = 'YOUR_GOOGLE_PLACES_API_KEY'; // Replace with your API key
-
-function usePlacesAutocomplete(query: string, location?: { lat: number; lng: number }) {
-  const [suggestions, setSuggestions] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    if (!query) {
-      setSuggestions([]);
-      return;
-    }
-    setLoading(true);
-    let url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(query)}&key=${GOOGLE_PLACES_API_KEY}`;
-    url += '&types=geocode|establishment';
-    if (location) {
-      url += `&location=${location.lat},${location.lng}&radius=50000`;
-    }
-    fetch(url)
-      .then((res) => res.json())
-      .then((data) => setSuggestions(data.predictions || []))
-      .catch(() => setSuggestions([]))
-      .finally(() => setLoading(false));
-  }, [query, location]);
-
-  return { suggestions, loading };
-}
-
-
-
-import { ThemedView } from '@/components/themed-view';
-import { useNavigation } from '@react-navigation/native';
-import { ImageBackground } from 'expo-image';
-import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { useGetAllNearbyMasjids } from '@/apis/masjid/useGetAllMasjids';
+import { MasjidCard } from '@/components/custom/MasjidCard';
+import Loader from '@/components/Loader';
+import { Theme } from '@/constants/types';
+import { useUserLocation } from '@/hooks/useUserLocation';
+import { useUserLocationStore } from '@/stores/userLocationStore';
+import Entypo from '@expo/vector-icons/Entypo';
+import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
+import { useTheme } from '@react-navigation/native';
+import { Image } from 'expo-image';
+import React, { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Animated, Dimensions, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+
+interface MasjidCardProps {
+  _id: string;
+  name: string;
+  address: string;
+  distance: number; // in km
+  images: string[]
+
+}
+
+// Get screen height and define modal height (1/4 of screen)
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+// const MODAL_HEIGHT = SCREEN_HEIGHT / 4;
+const MODAL_HEIGHT = 150;
+const PAGE = '1';
+const LIMIT = '20';
+const RADIUS = '50';
+
 const Home = () => {
+  
+  // react hooks
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [updateLocationLoading, setUpdateLocationLoading] = useState(false);
+  const [searchValue, setSearchValue] = useState('');
+  const slideAnim = useRef(new Animated.Value(-MODAL_HEIGHT)).current;      // Set up animated value, starting off-screen (top)
+  
+  // custom hooks and stores
+  const { restoreLocation , clearLocation } = useUserLocationStore();
+  const { location, errorMsg, fetchLocation, handleExitApp, handleOpenSettings } = useUserLocation();
+  const { colors } = useTheme() as Theme ;
+  const { data, error, isLoading, refetch } = useGetAllNearbyMasjids(RADIUS, LIMIT, PAGE, searchValue);   // need to optimize search
 
-    const [currentLocation, setCurrentLocation] = useState<Location.LocationObject | null>(null);
-  const [pickup, setPickup] = useState('');
-  const [drop, setDrop] = useState('');
-  const [activeField, setActiveField] = useState<'pickup' | 'drop' | null>(null);
+  // react effects
 
-  // Use current location for better suggestions
-  const latLng = currentLocation ? {
-    lat: currentLocation.coords.latitude,
-    lng: currentLocation.coords.longitude
-  } : undefined;
-  const { suggestions, loading } = usePlacesAutocomplete(activeField === 'pickup' ? pickup : drop, latLng);
-
+  // Restore location on mount
   useEffect(() => {
-    (async () => {
-      let { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        return;
-      }
-      let location = await Location.getCurrentPositionAsync({});
-      setCurrentLocation(location);
-      console.log('User current location:', location);
-    })();
-  }, []);
+    restoreLocation()
+  }, [])
+  
 
-  // Helper to render suggestions for pickup or drop
-  const renderSuggestions = (field: 'pickup' | 'drop', value: string, setValue: (v: string) => void) => (
-    activeField === field && value.length > 0 ? (
-      <FlatList
-        data={suggestions}
-        keyExtractor={(item) => item.place_id}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={styles.suggestion}
-            onPress={() => {
-              setValue(item.description);
-              setActiveField(null);
-            }}
-          >
-            <Text>{item.description}</Text>
-          </TouchableOpacity>
-        )}
-        ListEmptyComponent={loading ? <ActivityIndicator /> : null}
-        style={styles.suggestionList}
-        keyboardShouldPersistTaps="handled"
-      />
-    ) : null
-  );
+  // Handle animation logic
+  useEffect(() => {
+    if (isModalVisible) {
+      // Slide IN
+      Animated.timing(slideAnim, {
+        toValue: 0, // Slide to top of the screen (y: 0)
+        duration: 300,
+        useNativeDriver: true, // Smooth native animation
+      }).start();
+    } else {
+      // Slide OUT
+      Animated.timing(slideAnim, {
+        toValue: -MODAL_HEIGHT, // Slide back off-screen (y: -MODAL_HEIGHT)
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [isModalVisible, slideAnim])
 
-  const navigation: any = useNavigation();
+  
+  // functions
 
-  const handleNavigateToProfile = () => {
-    //  navigation.reset({
-    //     index: 0,
-    //     routes: [{ name: 'screens/ProfileScreen' }] // ✅ must match <Stack.Screen name="auth" />
-    //   });
-    navigation.navigate('screens/ProfileScreen');
+  const handleUpdateLocation = async () => {
+    setUpdateLocationLoading(true)
+    await clearLocation();
+    await fetchLocation();
+    setUpdateLocationLoading(false)
+    setIsModalVisible(false);
   };
+  
+  const closeModal = () => {
+    setIsModalVisible(false);
+  };
+
+
+  // return jsx
+  console.log(data , error, isLoading, '----------------------')
+
+  if(isLoading){
+    return <Loader />;
+  }
+
+
+  if(error){
+    return (
+      <SafeAreaView style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <Text style={{ color: colors.text }}>Some Error Occured</Text>
+      </SafeAreaView>
+    )
+  }
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.topBox}>
-        <ImageBackground
-          source={require('@/assets/images/homepage_bg.png')}
-          style={styles.topBoxBgImg}
-        >
-          <View style={styles.profileIconContainer} onTouchEnd={handleNavigateToProfile}>
-            <View style={styles.profileIcon}>
-              <MaterialIcons name="person" size={30} color="#fff" />
-            </View>
-          </View>
-          <View style={styles.locationContainer}>
-            <FlatList
-              data={[]}
-              ListHeaderComponent={
-                <ThemedView style={styles.container}>
-                  {/* <ThemedText type="title" style={styles.heading}>Book a Truck</ThemedText> */}
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Enter pickup location"
-                    value={pickup}
-                    onChangeText={setPickup}
-                    onFocus={() => setActiveField('pickup')}
-                  />
-                  {renderSuggestions('pickup', pickup, setPickup)}
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Enter drop location"
-                    value={drop}
-                    onChangeText={setDrop}
-                    onFocus={() => setActiveField('drop')}
-                  />
-                  {renderSuggestions('drop', drop, setDrop)}
-                </ThemedView>
-              }
-              keyboardShouldPersistTaps="handled"
-              style={{ flex: 1 }}
-            />
-          </View>
-        </ImageBackground>
+
+      <View style={styles.logoContainer}>
+        <Image
+          source={require('@/assets/images/homepage/logo-light.png')}
+          style={{
+            width: 100,
+            height: 50,
+            objectFit: 'contain'
+          }}
+        />
+
+        {/* This is your location bar, now a button */}
+        <TouchableOpacity
+          style={[styles.locationContainer, { backgroundColor: colors.BG_SECONDARY }]}
+          onPress={() => setIsModalVisible(true)} // Open modal on press
+        > 
+          <Entypo name="location-pin" size={24} color="#cd0a2a" />
+          <Text style={{ color: colors.text,  }} numberOfLines={1} ellipsizeMode="tail">{location?.address?.formattedAddress}</Text>
+        </TouchableOpacity>
       </View>
 
-      {/* <View style={styles.callBtn}>
-        <TouchableOpacity>
-          <Text style={styles.heading}>Call </Text>
-        </TouchableOpacity>
-      </View> */}
+      <View style={styles.paddingContainer}>
+        <TextInput 
+          value={searchValue}
+          onChangeText={setSearchValue}
+          placeholder="Search for Masjids"
+          style={[styles.input, { backgroundColor: colors.BG_SECONDARY, color: colors.TEXT_SECONDARY }]}
+        />
 
 
+      
+
+        <View>
+          {
+            data && data?.length === 0 ? (
+              <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                <Text style={{ color: colors.text }}>No Masjids Found</Text>
+              </View>
+            ) : 
+            <ScrollView style={styles.masjidListContainer} contentContainerStyle={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 10 }}>  
+              {data?.map((masjid : MasjidCardProps) => (
+                  <MasjidCard 
+                    key={masjid._id}
+                    {...masjid}
+                    />
+            ))}
+            </ScrollView>
+          }
+        </View>
+
+      </View>
+
+
+      {/* ❌ Modal for location errors */}
+      <Modal
+        visible={!!errorMsg}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalText}>{errorMsg}</Text>
+              <View style={styles.modalButtons}>
+                { errorMsg === "Please enable GPS!" ? 
+                  <TouchableOpacity style={styles.exitBtn} onPress={handleExitApp}>
+                    <Text style={styles.modalBtnText}>Exit</Text>
+                  </TouchableOpacity> :
+                  <TouchableOpacity style={styles.modalBtn} onPress={handleOpenSettings}>
+                    <Text style={styles.modalBtnText}>Open Settings</Text>
+                  </TouchableOpacity>
+                }
+                <TouchableOpacity style={styles.modalBtn} onPress={fetchLocation}>
+                  <Text style={styles.modalBtnText}>{errorMsg === "Please enable GPS!" ? "Enable" : "Retry"}</Text>
+                </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* 6. The Modal for updating the location */}
+      <Modal
+        animationType="fade" // "fade" for the backdrop, we handle the slide
+        transparent={true}
+        visible={isModalVisible}
+        onRequestClose={closeModal}
+      >
+        {/* Backdrop: press to close */}
+        <View style={styles.addressModalBackdrop} >
+          
+          {/* 7. The Animated Container that slides */}
+          <Animated.View
+            style={[
+              styles.addressModalContainer,
+              {
+                backgroundColor: colors.card,
+                height: MODAL_HEIGHT,
+                transform: [{ translateY: slideAnim }], // Apply animation
+              },
+            ]}
+          >
+            <View style={styles.addressModalBox}>
+              <Text
+                style={styles.disabledInput}
+                numberOfLines={3}
+                ellipsizeMode={'tail'}
+                
+              >{location?.address?.formattedAddress}</Text>
+              {/* This Pressable stops the tap from "passing through" to the backdrop */}
+              {
+                updateLocationLoading ? 
+                <ActivityIndicator color={colors.primary} size={30}/> :
+                <Pressable>
+                  <TouchableOpacity
+                    style={styles.updateButton}
+                    onPress={handleUpdateLocation}
+                  >
+                    
+                      <View style={styles.updateButtonContainer}>
+                        <FontAwesome6 name="location-crosshairs" size={24} color={colors.primary} />
+                      </View>
+                    
+                  </TouchableOpacity>
+                </Pressable>
+              }
+            </View>
+            <View style={styles.closeAddressModalButtonContainer}>
+              <TouchableOpacity style={styles.closeAddressModalButton} onPress={closeModal}>
+                <Text style={styles.closeAddressModalButtonText}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </Animated.View>
+        </View>
+      </Modal>
     </SafeAreaView>
-  )
-}
+  );
+};
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1
-  },
-  heading: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 16,
-  },
-  text: {
-    fontSize: 16,
-    color: '#333',
-  },
-  topBox: {
-    width: '100%',
-    height: 360,
-    borderBottomEndRadius: 20,
-    borderBottomStartRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    overflow: 'hidden',
-  },
-  callBtn: {
-    position: 'absolute',
-    bottom: 20,
-    right: 20,
-    backgroundColor: '#007BFF',
-    padding: 16,
-    borderRadius: 50,
-    elevation: 5,
-  },
-  topBoxBgImg: {
-    width: '100%',
-    height: '100%',
-    justifyContent: 'space-between',
-    padding: 20,
-    alignItems: 'center',
-  },
-  profileIconContainer: {
-    width: '100%',
-    height: 60,
-    justifyContent: 'center',
-    alignItems: 'flex-end',
-    // paddingInline: 20,
-
-  },
-  profileIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 30,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
+  container: { flex: 1 },
+  logoContainer: {paddingRight: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', overflowX:'hidden'},
+  paddingContainer: {
+    padding: 20
   },
   locationContainer: {
-    backgroundColor: '#fff',
-    height: '60%',
-    width: '100%',
-    borderRadius: 10,
     flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    paddingInline: 10,
+    paddingRight: 30,
+    paddingBlock: 5,
+    borderRadius: 8,
+    maxWidth:'60%'
+  },
+
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
   },
-  input: {
-    flex: 1,
-    height: 50,
-    borderColor: '#ccc',
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    marginVertical: 10,
+  modalContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    padding: 20,
+    width: '100%',
+    maxWidth: 400,
   },
-  suggestionList: {
-    position: 'absolute',
-    top: 60,
-    left: 0,        
-    right: 0,
-    backgroundColor: 'white',
-    borderRadius: 8,
-    maxHeight: 200,
-    elevation: 5,
-  },
-  suggestion: {
-    padding: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
-    backgroundColor: 'white',
-  },
-  suggestionText: {
+  modalText: {
     fontSize: 16,
-    color: '#333',
+    textAlign: 'center',
+    marginBottom: 20,
   },
-})
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  modalBtn: {
+    flex: 1,
+    marginHorizontal: 5,
+    backgroundColor: '#007BFF',
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  modalBtnText: {
+    color: '#fff',
+    fontSize: 16,
+    textAlign: 'center',
+  },
+  // --- Modal Styles ---
+  addressModalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)', // Dimmed background
+  },
+  addressModalContainer: {
+    position: 'absolute', // Position at the top
+    top: 0,
+    width: '100%',
+    padding: 20,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+    gap: 15
+  },
+  addressModalBox: {
+    width: '100%',
+    gap: 10,
+    alignItems: 'center', 
+    flexDirection: 'row',
+  },
+  updateButton: {
+    paddingVertical: 7,
+    paddingLeft: 5,
+    borderRadius: 10,
+    width: '100%',
+  },
+  updateButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  exitBtn: {
+    flex: 1,
+    marginHorizontal: 5,
+    backgroundColor: 'gray',
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  disabledInput: { flex: 1, borderWidth: 1, borderColor: '#ddd', borderRadius: 8, padding: 10, backgroundColor: '#e2e2e2', color: '#555'},
+  updateButtonContainer: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  closeAddressModalButtonContainer: { alignItems:'center' },
+  closeAddressModalButton: { backgroundColor: 'brown', paddingVertical: 7, paddingHorizontal: 20, borderRadius: 8,  },
+  closeAddressModalButtonText: { color: '#fff' },
+
+  input: { paddingHorizontal: 20, paddingVertical: 12, borderRadius: 8, fontSize: 16  },
+  masjidListContainer: {paddingVertical: 30, },
+
+});
 
 export default Home;

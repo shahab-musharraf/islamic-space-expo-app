@@ -1,25 +1,28 @@
 
+import { MyDarkTheme, MyDefaultTheme } from '@/constants/app-theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { ThemeProvider } from '@react-navigation/native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
+import { AppThemeProvider, useAppTheme } from '../constants/ThemeContext'; // 👈 Adjust path
 
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      retry: false,
+      retry: 3,
       refetchOnWindowFocus: false,
     },
   },
 });
 
 
-export default function RootLayout() {
+function RootLayoutNav() {
   const colorScheme = useColorScheme();
+  const { theme } = useAppTheme(); // 👈 Use your new hook
   const [loaded] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
@@ -30,18 +33,31 @@ export default function RootLayout() {
   }
 
   return (
-    <QueryClientProvider client={queryClient}>
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <ThemeProvider value={theme === 'dark' ? MyDarkTheme : MyDefaultTheme}>
       
         <Stack>
           <Stack.Screen name="index" options={{ headerShown: false }} />
           <Stack.Screen name="auth/index" options={{ headerShown: false }} />
           <Stack.Screen name="screens/ProfileScreen" options={{ headerShown: false }} />
+          <Stack.Screen name="screens/masjid-panel/MasjidPanelScreen" options={{ headerShown: true, headerTitle: "Masjid Panel" }} />
+          <Stack.Screen name="screens/masjid-panel/AddMasjidScreen" options={{ headerShown: true, headerTitle: "Add Masjid" }} />
+          <Stack.Screen name="screens/home/MasjidDetails" options={
+            ({route}:any) => ({ headerTitle: route?.params?.name || 'Masjid Details' , headerShown: true})
+          } />
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="+not-found" />
         </Stack>
         <StatusBar style="auto" />
     </ThemeProvider>
-    </QueryClientProvider>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <AppThemeProvider>
+      <QueryClientProvider client={queryClient}>
+        <RootLayoutNav />
+      </QueryClientProvider>
+    </AppThemeProvider>
   );
 }

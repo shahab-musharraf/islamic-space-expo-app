@@ -69,6 +69,20 @@ export default function WelcomeScreen() {
   
   const { mutateAsync: sendOtp, isPending:sendOtpLoader } = useSendOtpMutation();
   const {mutateAsync: verifyOtp, isPending:verifyLoading} = useVerifyOtpMutation();
+  const handleVerify = async () => {
+    if (otp.join('').length < 6) {
+      showMessage('Enter full 6-digit OTP');
+      return;
+    }
+   try {
+    await verifyOtp({mobile, otp: otp.join('')});
+   } catch (error) {
+    
+   }
+  
+    inputs.current[0]?.focus();
+    setOtp(['','','','','',''])
+  };
 
   const handleSendOtp = async () => {
     // Handle OTP sending logic here
@@ -123,16 +137,6 @@ const handleResend = () => {
   
 };
 
-  const handleVerify = async () => {
-    if (otp.join('').length < 6) {
-      showMessage('Enter full 6-digit OTP');
-      return;
-    }
-   await verifyOtp({mobile, otp: otp.join('')});
-
-    inputs.current[0]?.focus();
-    setOtp(['','','','','',''])
-  };
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
