@@ -26,12 +26,9 @@ authRequest.interceptors.request.use(
     const accessToken = await getAccessToken();
     const refreshToken = await getRefreshToken();
 
-    console.log('Request Interceptor', accessToken, refreshToken)
-
     if (accessToken) {
       const decoded = decodeJwt(accessToken);
       if (decoded?.exp && Date.now() >= decoded.exp * 1000) {
-        console.log('Access Token Expired at before requesting to backend')
         try {
           const res = await axios.post(`${EXPO_AUTH_SERVICE}/auth/refresh`, {
             refreshToken,
@@ -39,8 +36,6 @@ authRequest.interceptors.request.use(
 
           const newAccessToken = res.data?.accessToken;
           const newRefreshToken = res.data?.refreshToken;
-          console.log('New Access Token', newAccessToken)
-          console.log('New Refresh Token', newRefreshToken) 
           if (newAccessToken) {
             await setAccessToken(newAccessToken);
             config.headers = {
@@ -57,7 +52,6 @@ authRequest.interceptors.request.use(
         } catch (err) {
           await deleteAccessToken();
           await deleteRefreshToken();
-          console.log('In Request catch block, token deleted')
           // RootNavigation.navigate("Login"); // 👈 Navigate manually
           return Promise.reject("Session expired. Please login again.");
         }
@@ -85,7 +79,6 @@ authRequest.interceptors.response.use(
 
       try {
         const refreshToken = await getRefreshToken();
-        console.log('Response Interceptor', refreshToken)
         if (!refreshToken) throw new Error("Missing refresh token");
 
         const res = await axios.post(`${EXPO_AUTH_SERVICE}/auth/refresh`, {
@@ -94,8 +87,6 @@ authRequest.interceptors.response.use(
 
         const newAccessToken = res.data?.accessToken;
         const newRefreshToken = res.data?.refreshToken;
-        console.log('New Access Token', newAccessToken)
-        console.log('New Refresh Token', newRefreshToken) 
         
         if(newRefreshToken && newRefreshToken !== refreshToken){
             await setRefreshToken(newRefreshToken);
@@ -109,7 +100,6 @@ authRequest.interceptors.response.use(
       } catch (err) {
         await deleteAccessToken();
         await deleteRefreshToken();
-        console.log('Response Catch Block, token deleted');
         router.replace('/auth')
       }
     }

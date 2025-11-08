@@ -1,4 +1,5 @@
 import { useLogoutMutation } from '@/apis/auth/useLogout';
+import { roles } from '@/constants/roles';
 import { useAppTheme } from '@/constants/ThemeContext';
 import { Theme } from '@/constants/types';
 import { showMessage } from '@/utils/functions';
@@ -24,6 +25,7 @@ const ProfileScreen = () => {
   useEffect(() => {
     restoreProfile();
   }, [restoreProfile]);
+  console.log(profile)
 
   // const handleUpdateProfile = async (formData) => {
   //   try {
@@ -129,14 +131,14 @@ const ProfileScreen = () => {
           <Feather name="chevron-right" size={24} color={colors.DISABLED_TEXT} />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.optionRow} onPress={handleMasjidPanel}>
+        {profile && profile.role && profile.role.split(',').includes(roles.MASJID_SECRETARY) && <TouchableOpacity style={styles.optionRow} onPress={handleMasjidPanel}>
             {/* masjid and products tab */}
           <View style={styles.iconTextContainer}>
             <MasjidIcon name="mosque" size={20} color={colors.ICON} style={styles.icon} />
             <Text style={{...styles.optionText, color: colors.TEXT}}>Masjid Panel</Text> 
           </View>
           <Feather name="chevron-right" size={24} color={colors.DISABLED_TEXT} />
-        </TouchableOpacity>
+        </TouchableOpacity>}
       </View>
 
       {/* Logout Button at Bottom Center */}

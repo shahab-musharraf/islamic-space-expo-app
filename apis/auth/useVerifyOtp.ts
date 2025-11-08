@@ -20,7 +20,6 @@ export const useVerifyOtpMutation = () => {
       setAccessToken(response.accessToken);
       setRefreshToken(response.refreshToken);
       setProfile(response.profile);
-      console.log(response, 'response from useVerifyOtpMutation')
       showMessage("Logged In Successfully!")
       navigation.reset({ index: 0, routes: [{ name: '(tabs)' }] });
     },

@@ -1,3 +1,4 @@
+import { useUserLocationStore } from "@/stores/userLocationStore";
 import { useUserProfileStore } from "@/stores/userProfileStore";
 import { showMessage } from "@/utils/functions";
 import { useNavigation } from "@react-navigation/native";
@@ -8,6 +9,7 @@ import { deleteAccessToken, deleteRefreshToken } from "../_helpers/tokenStorage"
 export const useLogoutMutation = () => {
   const navigation :any = useNavigation();
   const { clearProfile } = useUserProfileStore();
+  const { clearLocation } = useUserLocationStore();
   return useMutation({
     mutationFn: async () => {
       const { data } = await authRequest.post(
@@ -19,12 +21,18 @@ export const useLogoutMutation = () => {
       deleteAccessToken()
       deleteRefreshToken()
       showMessage("Logged Out Successfully!")
+      clearLocation();
       clearProfile();
       navigation.reset({ index: 0, routes: [{ name: 'auth/index' }] });
       
     },
     onError : (error:any) => {
       showMessage(error.response.data.message || 'Something went wrong')
+      deleteAccessToken()
+      deleteRefreshToken()
+      clearProfile();
+      clearLocation();
+      navigation.reset({ index: 0, routes: [{ name: 'auth/index' }] });
       alert(error.response.data.message)
     }
   });

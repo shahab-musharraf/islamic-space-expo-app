@@ -2,12 +2,12 @@ import axios, { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from "ax
 import { router } from "expo-router";
 import { decodeJwt } from "./getDecodedToken";
 import {
-    deleteAccessToken,
-    deleteRefreshToken,
-    getAccessToken,
-    getRefreshToken,
-    setAccessToken,
-    setRefreshToken,
+  deleteAccessToken,
+  deleteRefreshToken,
+  getAccessToken,
+  getRefreshToken,
+  setAccessToken,
+  setRefreshToken,
 } from "./tokenStorage";
 
 const EXPO_DONATION_SERVICE = process.env.EXPO_PUBLIC_DONATION_SERVICE;

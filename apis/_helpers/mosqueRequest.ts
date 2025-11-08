@@ -12,7 +12,6 @@ import {
 
 const EXPO_MASJID_SERVICE = process.env.EXPO_PUBLIC_MASJID_SERVICE;
 const EXPO_AUTH_SERVICE = process.env.EXPO_PUBLIC_AUTH_SERVICE;
-console.log(EXPO_MASJID_SERVICE, 'UUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU')
 
 const mosqueRequest = axios.create({
   baseURL: EXPO_MASJID_SERVICE,

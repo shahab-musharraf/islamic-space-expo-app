@@ -18,16 +18,14 @@ import authRequest from "../_helpers/api";
 export const useSendOtpMutation = () => {
   return useMutation({
     mutationFn: async (mobile: string) => {
-        console.log( `${process.env.EXPO_PUBLIC_AUTH_SERVICE}/auth/send-otp`)
       const { data } = await authRequest.post(
         `${process.env.EXPO_PUBLIC_AUTH_SERVICE}/auth/send-otp`,
         { mobile }
       );
-      console.log(data, 'data from useSendOtpMutation')
       return data;
     },
-    onSuccess: (data) => console.log('Mutation success:', data),
-  onError: (error) => console.error('Mutation error:', error),
+    onSuccess: (data) => {},
+  onError: (error) => {},
 
   });
 };

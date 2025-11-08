@@ -1,16 +1,10 @@
-import { useNavigation } from '@react-navigation/native';
-import React, { useEffect, useState } from 'react';
+import { useGetAllMasjidsListedByUsername } from '@/apis/masjid/useGetAllMasjidListedByUsername';
+import { Theme } from '@/constants/types';
+import { useUserProfileStore } from '@/stores/userProfileStore';
+import { useNavigation, useTheme } from '@react-navigation/native';
+import React from 'react';
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-// Dummy function to fetch masjid for userId
-const fetchMasjidByUser = async (userId: string) => {
-  // Replace with real API call
-  // e.g. GET /masjids?userId=<userId>
-  // Return null if no masjid
-  // Example:
-  // { id, name, address, facilities } or null
-  return null; 
-};
 
 interface Masjid {
   id: string;
@@ -24,27 +18,22 @@ interface Props {
 }
 
 const MasjidPanel: React.FC<Props> = ({ userId }) => {
-  const [masjid, setMasjid] = useState<Masjid | null>(null);
-  const [loading, setLoading] = useState(true);
 
   const navigation :any= useNavigation();
 
+  const { colors } = useTheme() as Theme;
+
   const handleAddMasjid = () => {
-    console.log("Navigating to AddMasjidScreen");
     navigation.navigate('screens/masjid-panel/AddMasjidScreen');
   }
 
-  useEffect(() => {
-    const loadMasjid = async () => {
-      setLoading(true);
-      const data = await fetchMasjidByUser(userId);
-      setMasjid(data);
-      setLoading(false);
-    };
-    loadMasjid();
-  }, [userId]);
+  const { profile } = useUserProfileStore();
+    const { data, isLoading } = useGetAllMasjidsListedByUsername(profile?.mobile || '');
 
-  if (loading) {
+    console.log(data, 'dddddddddddddd')
+
+
+  if (isLoading) {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color="#0000ff" />
@@ -53,30 +42,16 @@ const MasjidPanel: React.FC<Props> = ({ userId }) => {
   }
 
   // No masjid found → show "Add Masjid" button
-  if (!masjid) {
+  if (!data || !data?.length) {
     return (
       <View style={styles.center}>
-        <TouchableOpacity onPress={handleAddMasjid} style={styles.addMasjidButton}>
-          <Text style={{ color:'blue' }}>Add Masjid</Text>
+        <TouchableOpacity onPress={handleAddMasjid} style={[styles.addMasjidButton, {borderColor: colors.BUTTON_TEXT}]}>
+          <Text style={{ color: colors.BUTTON_TEXT }}>Add Masjid</Text>
         </TouchableOpacity>
       </View>
     );
   }
 
-  // Masjid exists → show masjid details
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>{masjid.name}</Text>
-      <Text>{masjid.address}</Text>
-      {/* Render facilities if available */}
-      {masjid.facilities &&
-        Object.entries(masjid.facilities).map(([key, value]) => (
-          <Text key={key}>
-            {key}: {value ? 'Yes' : 'No'}
-          </Text>
-        ))}
-    </View>
-  );
 };
 
 const styles = StyleSheet.create({
@@ -98,7 +73,6 @@ const styles = StyleSheet.create({
     padding: 12,
     paddingInline: 20,
     borderRadius: 8,
-    borderColor: 'blue',
     borderWidth: 1,
     borderStyle: 'dashed',
     color: 'blue'

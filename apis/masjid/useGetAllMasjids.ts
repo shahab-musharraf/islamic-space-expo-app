@@ -5,7 +5,6 @@ import mosqueRequest from "../_helpers/mosqueRequest";
 export const useGetAllNearbyMasjids = (radius:string, limit: string, page: string, search:string) => {
 
   const { location } = useUserLocationStore();
-  console.log(location?.coords)
 
   // 1. THE FIX: The queryKey MUST include all variables
   // that the query depends on.

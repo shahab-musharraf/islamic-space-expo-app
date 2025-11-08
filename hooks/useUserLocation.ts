@@ -40,69 +40,120 @@ export const useUserLocation = (): UseUserLocationResult => {
   };
 
   // Fetch location function
+  // const fetchLocation = useCallback(async () => {
+  //   setIsLoading(true); // start loading
+  //   setErrorMsg(null);
+  //   console.log('Fetching Location ******************')
+  //   try {
+  //     // 1️⃣ Request permission
+  //     const { status } = await Location.requestForegroundPermissionsAsync();
+  //     console.log('Checking permission status ******************')
+  //     if (status !== 'granted') {
+  //       console.log('permission not granted ******************')
+  //       setErrorMsg('Location permission denied. Please enable it in settings.');
+  //       return;
+  //     }
+  //     console.log('permission is granted ******************')
+
+  //     // 2️⃣ Check GPS
+  //     const servicesEnabled = await Location.hasServicesEnabledAsync();
+  //     console.log('checking gps is opened or not ******************')
+  //     if (!servicesEnabled) {
+  //       console.log('gps is not enabled ******************')
+  //       if (Platform.OS === 'android') {
+  //         try {
+  //           console.log('asking to open gps ******************')
+  //           const loc = await Location.getCurrentPositionAsync({
+  //             accuracy: Location.Accuracy.Balanced,
+  //             mayShowUserSettingsDialog: true
+  //           });
+  //           console.log(loc, 'got the location ******************')
+  //           const address = await getAddressFromCoords(loc.coords.latitude, loc.coords.longitude);
+  //           setLocation({ coords: loc.coords, address });
+  //           return;
+  //         } catch {
+  //           console.log('catch block while getting location after asked for permission ******************')
+  //           setErrorMsg('Please enable GPS!');
+  //           return;
+  //         }
+  //       } else {
+  //         console.log('gps is off ******************')
+  //         setErrorMsg('Location services are off. Please enable GPS in Settings.');
+  //         return;
+  //       }
+  //     }
+
+  //     console.log('gps was on, getting the location ******************')
+  //     // 3️⃣ Get location
+  //     const loc = await Location.getCurrentPositionAsync({
+  //       accuracy: Location.Accuracy.High,
+  //       mayShowUserSettingsDialog: true,
+  //     });
+  //     console.log(loc, 'gps was on, got the location ******************')
+  //     const address = await getAddressFromCoords(loc.coords.latitude, loc.coords.longitude);
+  //     setLocation({ coords: loc.coords, address });
+
+  //   } catch (err) {
+  //     console.log('location error ******************')
+  //     console.warn('Location error:', err);
+  //     setErrorMsg('Unable to fetch location. Please try again.');
+  //   }
+  //   finally {
+  //     setIsLoading(false); // stop loading in all cases
+  //   }
+  // }, [setLocation])
+
   const fetchLocation = useCallback(async () => {
-    setIsLoading(true); // start loading
+    setIsLoading(true);
     setErrorMsg(null);
+    console.log('Fetching Location ******************');
+
     try {
       // 1️⃣ Request permission
       const { status } = await Location.requestForegroundPermissionsAsync();
-      console.log(status, 'location status')
       if (status !== 'granted') {
         setErrorMsg('Location permission denied. Please enable it in settings.');
+        setIsLoading(false);
         return;
       }
+      console.log('Permission granted');
 
-      // 2️⃣ Check GPS
-      const servicesEnabled = await Location.hasServicesEnabledAsync();
-      console.log(servicesEnabled, 'gps on')
-      if (!servicesEnabled) {
-        if (Platform.OS === 'android') {
-          try {
-            console.log('fetching')
-            const loc = await Location.getCurrentPositionAsync({
-              accuracy: Location.Accuracy.High,
-              mayShowUserSettingsDialog: true,
-            });
-            console.log(loc, 'settinsdafsdf')
-            const address = await getAddressFromCoords(loc.coords.latitude, loc.coords.longitude);
-            setLocation({ coords: loc.coords, address });
-            return;
-          } catch {
-            setErrorMsg('Please enable GPS!');
-            return;
-          }
-        } else {
-          setErrorMsg('Location services are off. Please enable GPS in Settings.');
-          return;
-        }
+      // 2️⃣ Try to get the last known position (it's fast)
+      let loc = await Location.getLastKnownPositionAsync();
+
+      // Check if it's null or too old (e.g., older than 5 minutes)
+      const fiveMinutesAgo = Date.now() - 5 * 60 * 1000;
+      if (!loc || loc.timestamp < fiveMinutesAgo) {
+        console.log('Last known location is old or null. Fetching new one...');
+        
+        // 3️⃣ If no good cached location, get the current one
+        //    This will prompt for GPS if it's off.
+        loc = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced, // Use Balanced
+          mayShowUserSettingsDialog: true,
+        });
+      } else {
+        console.log('Using fast, cached location');
       }
 
-      // 3️⃣ Get location
-      console.log('fetcing 2')
-      const loc = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.High,
-        mayShowUserSettingsDialog: true,
-      });
-      
-      console.log(loc, 'location seeint')
+      // 4️⃣ Now we have a location (either cached or new)
+      console.log(loc, 'Got the location ******************');
       const address = await getAddressFromCoords(loc.coords.latitude, loc.coords.longitude);
       setLocation({ coords: loc.coords, address });
 
     } catch (err) {
+      console.log('Location error (e.g., user canceled GPS dialog or timeout) ******************');
       console.warn('Location error:', err);
-      setErrorMsg('Unable to fetch location. Please try again.');
+      setErrorMsg('Unable to fetch location. Please enable GPS and try again.');
+    } finally {
+      setIsLoading(false);
     }
-    finally {
-      setIsLoading(false); // stop loading in all cases
-    }
-  }, [setLocation])
-
+  }, [setLocation, getAddressFromCoords]);
 
 
 
   // Restore location on mount, then fetch if needed
   useEffect(() => {
-    console.log('hiiiiiiiiiiiiiiiii')
     const init = async () => {
       setIsLoading(true);
       await restoreLocation();

@@ -1,9 +1,12 @@
 import { useSendOtpMutation } from '@/apis/auth/useSendOtp';
 import { useVerifyOtpMutation } from '@/apis/auth/useVerifyOtp';
 import ResendTimer from '@/components/ResendTimer';
+import { Theme } from '@/constants/types';
 import { showMessage } from '@/utils/functions';
 import AntDesign from '@expo/vector-icons/AntDesign';
-import { useNavigation } from '@react-navigation/native';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { useNavigation, useTheme } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useRef, useState } from 'react';
 import {
@@ -11,7 +14,6 @@ import {
   Alert,
   Animated,
   Dimensions,
-  Image,
   ImageBackground,
   Keyboard,
   Platform,
@@ -20,7 +22,7 @@ import {
   TextInput,
   TouchableOpacity,
   TouchableWithoutFeedback,
-  View,
+  View
 } from 'react-native';
 
 const { width, height } = Dimensions.get('window');
@@ -31,14 +33,22 @@ export default function WelcomeScreen() {
   const [mobile, setMobile] = useState('');
   const navigation: any = useNavigation();
   const [otpSent, setOtpSent] = useState(false);
+  const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
 
-    const [otp, setOtp] = useState(['', '', '', '', '', '']);
     // const [timer, setTimer] = useState(60);
       const inputs = useRef<Array<TextInput | null>>([]);
+      const { colors } = useTheme() as Theme;
 
   useEffect(() => {
-    const keyboardShowListener = Keyboard.addListener('keyboardDidShow', () => {
+    // iOS uses 'Will' events for synchronized animation. Android uses 'Did' events.
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const keyboardShowListener = Keyboard.addListener(showEvent, (event) => {
       setKeyboardVisible(true);
+      const keyBoardHeight = event.endCoordinates.height;
+      setKeyboardHeight(keyBoardHeight);
       Animated.timing(bottomAnim, {
         toValue: 1,
         duration: 300,
@@ -46,8 +56,9 @@ export default function WelcomeScreen() {
       }).start();
     });
 
-    const keyboardHideListener = Keyboard.addListener('keyboardDidHide', () => {
+    const keyboardHideListener = Keyboard.addListener(hideEvent, () => {
       setKeyboardVisible(false);
+      setKeyboardHeight(0);
       Animated.timing(bottomAnim, {
         toValue: 0,
         duration: 300,
@@ -63,7 +74,7 @@ export default function WelcomeScreen() {
 
   const bottomOffset = bottomAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, Platform.OS === 'android' ? 150 : 250], // you can tweak the offset
+    outputRange: [0, Platform.OS === 'android' ? keyboardHeight : 250], // you can tweak the offset
   });
 
   
@@ -144,7 +155,7 @@ const handleResend = () => {
         // source={{
         //   uri: 'https://images.unsplash.com/photo-1506748686214-e9df14d4d9d0?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1350&q=80',
         // }}
-        source={require('../../assets/images/bg.png')}
+        source={require('../../assets/images/auth/bg.png')}
         style={styles.background}
         resizeMode="stretch"
       >
@@ -152,16 +163,6 @@ const handleResend = () => {
         <View style={styles.overlay} />
 
         <StatusBar style="light" />
-
-        <View style={styles.logoContainer}>
-          <Image
-            source={require('../../assets/images/logo.png')}
-            style={styles.logo}
-            resizeMode="contain"
-          />
-          <Text style={styles.appName}>Welcome to EzyWheel</Text>
-          <Text style={styles.tagline}>India’s #1 truck & machinery booking app</Text>
-        </View>
 
         {!otpSent ? <Animated.View
           style={[
@@ -186,8 +187,8 @@ const handleResend = () => {
             />
             {sendOtpLoader ? 
             <ActivityIndicator size="large" color="#000" style={{ marginLeft: 10 }} />:
-            <TouchableOpacity style={styles.button} onPress={handleSendOtp}>
-              <AntDesign  size={24} color="#fff" />
+            <TouchableOpacity style={[styles.button, { backgroundColor: colors.BUTTON_BG}]} onPress={handleSendOtp}>
+              <Ionicons name="send" size={16} color={colors.BUTTON_TEXT} />
             </TouchableOpacity>}
           </View>
 
@@ -200,8 +201,9 @@ const handleResend = () => {
           <View style={styles.verifyContainer}>
             <Text style={styles.appName}>Verify OTP</Text>
             <View style={styles.editRow}>
-                <Text style={styles.tagline}>Enter the 6-digit code sent to {mobile} </Text>
-                <TouchableOpacity
+                <Text style={styles.tagline}>Enter the 6-digit code sent to <Text style={{ color: colors.TINT }}>{mobile}</Text> </Text>
+                <View style={{ justifyContent:'center'}}>
+                  <TouchableOpacity
                     style={styles.editIcon}
                     onPress={() => {
                         Alert.alert(
@@ -219,8 +221,9 @@ const handleResend = () => {
                         );
                     }}
                     >
-                    <AntDesign name="edit" size={18} color="#007BFF" />
-                </TouchableOpacity>
+                      <Text><AntDesign name="edit" size={16} color={colors.DISABLED_TEXT} /></Text>
+                  </TouchableOpacity>
+                </View>
             </View>
           </View>
             <View style={styles.otpRow}>
@@ -254,8 +257,8 @@ const handleResend = () => {
             </View>
             {verifyLoading ?
              <ActivityIndicator size="large" color="#fff" style={{ marginLeft: 10 }} /> :
-             <TouchableOpacity style={styles.button} onPress={handleVerify}>
-                <AntDesign  size={24} color="#fff"  />
+             <TouchableOpacity style={[styles.button, { backgroundColor: colors.BUTTON_BG}]} onPress={handleVerify}>
+                <MaterialIcons name="navigate-next" size={26} color={colors.BUTTON_TEXT} />
             </TouchableOpacity>}
           </View>
 
@@ -299,7 +302,6 @@ const styles = StyleSheet.create({
   tagline: {
     fontSize: 16,
     color: '#fff',
-    marginTop: 5,
     textAlign: 'center',
   },
   content: {
@@ -309,7 +311,7 @@ const styles = StyleSheet.create({
     padding: 24,
     paddingTop: 30,
     alignItems: 'center',
-    height: height * 0.4,
+    height: height/2.5,
     zIndex: 2, // Ensure it appears above the overlay
   },
   inputContainer: {
@@ -326,7 +328,6 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 16,
-    color: '#000',
   },
   button: {
     backgroundColor: '#000',
@@ -372,14 +373,13 @@ const styles = StyleSheet.create({
     },
     editRow: {
         flexDirection: 'row',
-        alignItems: 'center',
         marginTop: 4,
-        flexWrap: 'wrap',
+        flexWrap: 'nowrap',
+        justifyContent: 'center'
     },
 
         editIcon: {
-        marginLeft: 8,
-        padding: 4,
+          marginLeft: 2
     },
     resendAndVerifyContainer: {
         flexDirection: 'row',

@@ -8,18 +8,25 @@
     "scheme": "islamicspace",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "red"
+    },
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "We need your location to show nearby trucks."
-      }
+        "NSLocationWhenInUseUsageDescription": "We need your location to show nearby trucks.",
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "bundleIdentifier": "test.app.islamic-space"
     },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/homepage/logo.png",
-        "backgroundImage": "./assets/images/homepage/logo.png",
-        "monochromeImage": "./assets/images/homepage/logo.png"
+        "foregroundImage": "./assets/images/icon.png",
+        "backgroundImage": "./assets/images/icon.png",
+        "monochromeImage": "./assets/images/icon.png"
       },
       "usesCleartextTraffic": true,
       "permissions": [
@@ -57,8 +64,15 @@
           "locationWhenInUsePermission": "Allow $(PRODUCT_NAME) to access your location while using the app."
         }
       ],
+      [
+        "expo-document-picker",
+        {
+          "iCloudContainerEnvironment": "Production"
+        }
+      ],
       "expo-font",
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-video"
     ],
     "experiments": {
       "typedRoutes": true,

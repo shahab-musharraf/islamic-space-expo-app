@@ -1,11 +1,14 @@
+import { Theme } from "@/constants/types";
 import { useUserLocation } from "@/hooks/useUserLocation";
 import { useUserLocationStore } from "@/stores/userLocationStore";
 import { showMessage } from "@/utils/functions";
 import { Ionicons } from "@expo/vector-icons";
+import { useTheme } from "@react-navigation/native";
 import { Image, ImageBackground } from "expo-image";
 import * as ImagePicker from 'expo-image-picker';
 import { useEffect } from "react";
-import { ActivityIndicator, FlatList, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, FlatList, Modal, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { Asset, BasicInfo } from "../AddMasjidScreen";
 
 interface BasicInfoProps  {
@@ -13,83 +16,214 @@ interface BasicInfoProps  {
     setBasicInfo :(value: BasicInfo | ((prev: BasicInfo) => BasicInfo)) => void
 }
 
-function getUserLocation(){
-
-}
-
-
-const MAXX_IMAGES_ALLOWED = 10
-const MAXX_VIDEOS_ALLOWED = 5
+const MAXX_IMAGES_ALLOWED = 4
+const MAXX_VIDEOS_ALLOWED = 1
 const BasicInfoScreen : React.FC<BasicInfoProps> = ({ basicInfo, setBasicInfo }) => {
+    const { colors } = useTheme() as Theme;
   const { location, clearLocation } = useUserLocationStore(state => state);
   const { fetchLocation, errorMsg, isLoading, handleExitApp, handleOpenSettings  } = useUserLocation();
   
 
 
 
-  const pickImages = async () => {
-    try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
-        allowsMultipleSelection: true,
-        quality: 1,
-      });
-      if (!result.canceled) {
-        const selected = result.assets.map((a) => ({
-          uri: a.uri,
-          type: 'image',
-          name: a.fileName || `image-${Date.now()}.jpg`,
-          mimeType: a.type ? `${a.type}/jpg` : 'image/jpeg'
+  // const pickImages = async () => {
+  //   try {
+  //     const result = await ImagePicker.launchImageLibraryAsync({
+  //       mediaTypes: ['images'],
+  //       allowsMultipleSelection: true,
+  //       quality: 1,
+  //     });
+  //     if (!result.canceled) {
+  //       const selected = result.assets.map((a) => ({
+  //         uri: a.uri,
+  //         type: 'image',
+  //         name: a.fileName || `image-${Date.now()}.jpg`,
+  //         mimeType: a.type ? `${a.type}/jpg` : 'image/jpeg'
           
-        }));
+  //       }));
         
-        // max limit
-        if( selected.length + basicInfo.images.length > MAXX_IMAGES_ALLOWED ){
-          showMessage("You can add upto "+MAXX_IMAGES_ALLOWED + " images");
-          return;
-        }
+  //       // max limit
+  //       if( selected.length + basicInfo.images.length > MAXX_IMAGES_ALLOWED ){
+  //         showMessage("You can add upto "+MAXX_IMAGES_ALLOWED + " images");
+  //         return;
+  //       }
         
-        setBasicInfo((prev) => ({
-            ...prev,
-            images: [...prev.images, ...selected],
-        }))
-    }
-    } catch (err) {
-      console.warn('image pick error', err);
-    }
-  };
+  //       setBasicInfo((prev) => ({
+  //           ...prev,
+  //           images: [...prev.images, ...selected],
+  //       }))
+  //   }
+  //   } catch (err) {
+  //     console.warn('image pick error', err);
+  //   }
+  // };
   
-  const pickVideo = async () => {
-    try {
-        const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ['videos'],
-            allowsMultipleSelection: true,
-            quality: 1,
-        });
-        if (!result.canceled) {
-            const selected = result.assets.map((a) => ({
-                uri: a.uri,
-                type: 'video',
-                name: a.fileName || `video-${Date.now()}.mp4`,
-                mimeType: 'video/mp4'
-            }))
-            
-            // max limit
-            if( selected.length + basicInfo.videos.length > MAXX_VIDEOS_ALLOWED ){
-                showMessage("You can add upto "+MAXX_VIDEOS_ALLOWED + " videos");
-                return;
-            }
+  const pickImages = async () => {
+  try {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsMultipleSelection: true,
+      quality: 1,
+    });
 
-            setBasicInfo((prev) => ({
-                ...prev,
-                videos: [...prev.videos, ...selected],
-            }));
+    if (!result.canceled) {
+      // --- New logic starts here ---
+
+      const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
+      const validAssets = [];
+      let oversizedFiles = 0;
+
+      for (const asset of result.assets) {
+        // Check if asset has fileSize and if it's within the limit
+        if (asset.fileSize && asset.fileSize > MAX_FILE_SIZE_BYTES) {
+          oversizedFiles++;
+        } else if (!asset.fileSize) {
+          // Fallback: If fileSize is not available (rare), you can either
+          // allow it, or try to fetch it manually. We'll allow it for now.
+          console.warn('Could not determine file size for asset:', asset.uri);
+          validAssets.push(asset);
+        } else {
+          // File is valid
+          validAssets.push(asset);
         }
-    } catch (err) {
-      console.warn('video pick error', err);
-    }
-  };
+      }
 
+      // Notify the user if some images were skipped
+      if (oversizedFiles > 0) {
+        showMessage(
+          `${oversizedFiles} image(s) were too large (max 10MB) and were not added.`
+        );
+      }
+      
+      // If no valid images are left, stop here
+      if (validAssets.length === 0) {
+          return;
+      }
+      
+      // --- New logic ends here ---
+
+      // Now, map only the valid assets
+      const selected = validAssets.map((a) => ({
+        uri: a.uri,
+        type: 'image',
+        name: a.fileName || `image-${Date.now()}.jpg`,
+        mimeType: a.type ? `${a.type}/jpg` : 'image/jpeg',
+        // You can also store the file size if you need it
+        // fileSize: a.fileSize 
+      }));
+
+      // Your existing max limit check
+      if (selected.length + basicInfo.images.length > MAXX_IMAGES_ALLOWED) {
+        showMessage('You can add up to ' + MAXX_IMAGES_ALLOWED + ' images');
+        return;
+      }
+
+      setBasicInfo((prev) => ({
+        ...prev,
+        images: [...prev.images, ...selected],
+      }));
+    }
+  } catch (err) {
+    console.warn('image pick error', err);
+  }
+};
+  // const pickVideo = async () => {
+  //   try {
+  //       const result = await ImagePicker.launchImageLibraryAsync({
+  //           mediaTypes: ['videos'],
+  //           allowsMultipleSelection: true,
+  //           quality: 1,
+  //       });
+  //       if (!result.canceled) {
+  //           const selected = result.assets.map((a) => ({
+  //               uri: a.uri,
+  //               type: 'video',
+  //               name: a.fileName || `video-${Date.now()}.mp4`,
+  //               mimeType: 'video/mp4'
+  //           }))
+            
+  //           // max limit
+  //           if( selected.length + basicInfo.videos.length > MAXX_VIDEOS_ALLOWED ){
+  //               showMessage("You can add upto "+MAXX_VIDEOS_ALLOWED + " videos");
+  //               return;
+  //           }
+
+  //           setBasicInfo((prev) => ({
+  //               ...prev,
+  //               videos: [...prev.videos, ...selected],
+  //           }));
+  //       }
+  //   } catch (err) {
+  //     console.warn('video pick error', err);
+  //   }
+  // };
+
+  const pickVideo = async () => {
+  try {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['videos'],
+      allowsMultipleSelection: true,
+      quality: 1, // Note: quality is often ignored for videos
+    });
+
+    if (!result.canceled) {
+      // --- New logic starts here ---
+
+      const MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024; // 50MB
+      const validAssets = [];
+      let oversizedFiles = 0;
+
+      for (const asset of result.assets) {
+        // Check if asset has fileSize and if it's within the limit
+        if (asset.fileSize && asset.fileSize > MAX_FILE_SIZE_BYTES) {
+          oversizedFiles++;
+        } else if (!asset.fileSize) {
+          // Fallback: If fileSize is not available, allow it
+          console.warn('Could not determine file size for asset:', asset.uri);
+          validAssets.push(asset);
+        } else {
+          // File is valid
+          validAssets.push(asset);
+        }
+      }
+
+      // Notify the user if some videos were skipped
+      if (oversizedFiles > 0) {
+        showMessage(
+          `${oversizedFiles} video(s) were too large (max 50MB) and were not added.`
+        );
+      }
+      
+      // If no valid videos are left, stop here
+      if (validAssets.length === 0) {
+          return;
+      }
+
+      // --- New logic ends here ---
+
+      // Map only the valid assets
+      const selected = validAssets.map((a) => ({
+        uri: a.uri,
+        type: 'video',
+        name: a.fileName || `video-${Date.now()}.mp4`,
+        mimeType: a.mimeType || 'video/mp4', // Use asset's mimeType if available
+      }));
+
+      // Your existing max limit check
+      if (selected.length + basicInfo.videos.length > MAXX_VIDEOS_ALLOWED) {
+        showMessage('You can add up to ' + MAXX_VIDEOS_ALLOWED + ' videos');
+        return;
+      }
+
+      setBasicInfo((prev) => ({
+        ...prev,
+        videos: [...prev.videos, ...selected],
+      }));
+    }
+  } catch (err) {
+    console.warn('video pick error', err);
+  }
+};
 
   const handleChangeInput = (name: string, value: string) => {
     setBasicInfo((prev: BasicInfo) => (
@@ -133,9 +267,9 @@ const BasicInfoScreen : React.FC<BasicInfoProps> = ({ basicInfo, setBasicInfo })
     if(location){
       setBasicInfo({
         ...basicInfo,
-        address: location.address?.formattedAddress ?? '',
-        city: location.address?.city ?? '',
-        state: location.address?.state ?? '',
+        address: location.address?.formattedAddress ?? '-',
+        city: location.address?.city ?? '-',
+        state: location.address?.state ?? '-',
         pincode: location.address?.postalCode ?? '',
         latitude: location.coords.latitude.toString(),
         longitude: location.coords.longitude.toString(),
@@ -147,9 +281,26 @@ const BasicInfoScreen : React.FC<BasicInfoProps> = ({ basicInfo, setBasicInfo })
     await useUserLocationStore.getState().clearLocation(); // wait for clearing
     await   fetchLocation();
   }
-    
+
+  const handleIsUnderConstruction = () => {
+    if(!basicInfo.isUnderConstruction){
+      Alert.alert('Alert', 'Masjid is Under Construction means Masjid is not actively running');
+    }
+    setBasicInfo((prev: BasicInfo) => ({
+          ...prev,
+          isUnderConstruction: !prev.isUnderConstruction
+      }))
+  }
+
   return (
-    <ScrollView>
+    <KeyboardAwareScrollView
+              style={styles.container}
+              contentContainerStyle={styles.scrollContent}
+              keyboardShouldPersistTaps="handled"
+              // This enables it to scroll to the input automatically
+              enableOnAndroid={true} 
+              extraScrollHeight={20} // Fine-tune this if needed
+            >
       <Modal
         visible={!!errorMsg}
         transparent
@@ -157,32 +308,36 @@ const BasicInfoScreen : React.FC<BasicInfoProps> = ({ basicInfo, setBasicInfo })
         statusBarTranslucent
       >
         <View style={styles.modalBackdrop}>
-          <View style={styles.modalContainer}>
+          <View style={[styles.modalContainer, { backgroundColor: colors.BACKGROUND}]}>
             <Text style={styles.modalText}>{errorMsg}</Text>
               <View style={styles.modalButtons}>
                 { errorMsg === "Please enable GPS!" ? 
-                  <TouchableOpacity style={styles.exitBtn} onPress={handleOpenSettings}>
+                  <TouchableOpacity style={[styles.exitBtn, { backgroundColor: colors.DISABLED_BUTTON_BG}]} onPress={handleOpenSettings}>
                     <Text style={styles.modalBtnText}>Exit</Text>
                   </TouchableOpacity> :
                   <TouchableOpacity style={styles.modalBtn} onPress={handleOpenSettings}>
                     <Text style={styles.modalBtnText}>Open Settings</Text>
                   </TouchableOpacity>
                 }
-                <TouchableOpacity style={styles.modalBtn} onPress={fetchLocation}>
-                  <Text style={styles.modalBtnText}>{errorMsg === "Please enable GPS!" ? "Enable" : "Retry"}</Text>
+                <TouchableOpacity style={[styles.modalBtn, {backgroundColor: colors.BUTTON_BG}]} onPress={fetchLocation}>
+                  <Text style={[styles.modalBtnText, {color: colors.BUTTON_TEXT}]}>{errorMsg === "Please enable GPS!" ? "Enable" : "Retry"}</Text>
                 </TouchableOpacity>
             </View>
           </View>
         </View>
       </Modal>
-      <ScrollView style={styles.stepContainer}>
+      <ScrollView style={[styles.stepContainer]}>
         <Text style={styles.label}>Masjid Name</Text>
         <TextInput style={styles.input} value={basicInfo.name} onChangeText={(text: string) => handleChangeInput('name', text)} placeholder="Masjid name" />
+
+        <Text style={styles.label}>Secretary Name</Text>
+        <TextInput style={styles.input} value={basicInfo.secretaryName} onChangeText={(text: string) => handleChangeInput('secretaryName', text)} placeholder="Secretary name" />
+
 
         <View>
           <Text style={styles.label}>Address</Text>
           <TouchableOpacity onPress={refetchCurrLocation} style={styles.fetchLocationBtn}>
-            <Text style={styles.fetchLocationBtnText}>{isLoading ? <ActivityIndicator color={"blue"} size={24}/> : "Get Current Location"}</Text>
+            <Text style={[styles.fetchLocationBtnText, { color: colors.TINT }]}>{isLoading ? <ActivityIndicator color={"blue"} size={24}/> : "Get Current Location"}</Text>
           </TouchableOpacity>
         </View>
         <TextInput style={styles.input} value={basicInfo.address} onChangeText={(text: string) => handleChangeInput('address', text)} placeholder="Address" multiline />
@@ -197,14 +352,14 @@ const BasicInfoScreen : React.FC<BasicInfoProps> = ({ basicInfo, setBasicInfo })
             value={basicInfo.latitude} 
             onChangeText={(text: string) => handleChangeInput('latitude', text)} 
             placeholder="Latitude" 
-            editable= {location ? false : true}
+            editable= {location?.coords?.latitude ? false : true}
           />
           <TextInput 
             style={[styles.disabledInput, { flex: 1 }]}
             value={basicInfo.longitude} 
             onChangeText={(text: string) => handleChangeInput('longitude', text)}
             placeholder="Longitude" 
-            editable= {location ? false : true}
+            editable= {location?.coords?.latitude ? false : true}
           />
           
         </View>
@@ -212,11 +367,21 @@ const BasicInfoScreen : React.FC<BasicInfoProps> = ({ basicInfo, setBasicInfo })
         <Text style={styles.label}>Pincode</Text>
         <TextInput style={styles.disabledInput} editable={location ? false: true} value={basicInfo.pincode} onChangeText={(text: string) => handleChangeInput('pincode', text)} placeholder="Pincode" keyboardType="numeric" />
 
+        <View style={styles.underConstructionBox}>
+          <Text style={[styles.label]}>Masjid is Under Construction</Text>
+          <Switch
+            trackColor={{ false: '#767577', true: '#81b0ff' }}
+            thumbColor={basicInfo.isUnderConstruction ? colors.TINT : '#f4f3f4'}
+            onValueChange={handleIsUnderConstruction}
+            value={basicInfo.isUnderConstruction}
+          />
+        </View>
+
         <View>
           <Text style={styles.label}>Images</Text>
           <View style={{ flexDirection: 'row', gap: 12, marginVertical: 8 }}>
             <TouchableOpacity style={styles.btn} onPress={pickImages}>
-              <Text style={styles.btnText}>Pick Images</Text>
+              <Text style={[styles.btnText, { color: colors.DISABLED_BUTTON_TEXT}]}>Pick Images</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.btnOutline} onPress={handleClearImages}>
               <Text>Clear Images</Text>
@@ -242,9 +407,9 @@ const BasicInfoScreen : React.FC<BasicInfoProps> = ({ basicInfo, setBasicInfo })
           <Text style={styles.label}>Videos</Text>
           <View style={{ flexDirection: 'row', gap: 12, marginVertical: 8 }}>
             <TouchableOpacity style={styles.btn} onPress={pickVideo}>
-              <Text style={styles.btnText}>Pick Video</Text>
+              <Text style={[styles.btnText, { color: colors.DISABLED_BUTTON_TEXT}]}>Pick Video</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.btnOutline} onPress={handleClearVideos}>
+            <TouchableOpacity style={[styles.btnOutline, {borderColor: colors.border}]} onPress={handleClearVideos}>
               <Text>Clear Videos</Text>
             </TouchableOpacity>
           </View>
@@ -272,22 +437,31 @@ const BasicInfoScreen : React.FC<BasicInfoProps> = ({ basicInfo, setBasicInfo })
           />
         </View>
       </ScrollView>
-    </ScrollView>
+        
+
+    </KeyboardAwareScrollView>
   )
 };
 
 
   const styles = StyleSheet.create({
+    container: {
+    flex: 1,
+  },
+  scrollContent: { // <-- ADD THIS NEW STYLE
+    flexGrow: 1,
+    // paddingBottom: 24, // Adds a little space at the very bottom
+  },
     stepContainer: { flex: 1 },
     label: { marginVertical: 6, fontSize: 14, fontWeight: '600' },
     input: { borderWidth: 1, borderColor: '#ddd', borderRadius: 8, padding: 10, backgroundColor: '#fff', marginBottom: 8 },
     disabledInput: { borderWidth: 1, borderColor: '#ddd', borderRadius: 8, padding: 10, backgroundColor: '#f2f2f2', color: '#555' , marginBottom: 8 },
     btn: { backgroundColor: '#e6e6ff', padding: 10, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
-    btnText: { color: '#111', fontWeight: '700' },
-    btnOutline: { borderWidth: 1, borderColor: '#ddd', padding: 10, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+    btnText: { fontWeight: '700' },
+    btnOutline: { borderWidth: 1, padding: 10, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
     removeBtn: { position: 'absolute', top: 6, right: 6, backgroundColor: '#0008', borderRadius: 12, padding: 2 },
-    fetchLocationBtn: { position: 'absolute', top: 6, right: 6, borderRadius: 12, padding: 2, color: 'blue' },
-    fetchLocationBtnText: {color: "blue"},
+    fetchLocationBtn: { position: 'absolute', top: 6, right: 6, borderRadius: 12, padding: 2 },
+    fetchLocationBtnText: {},
     modalBackdrop: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
@@ -296,7 +470,6 @@ const BasicInfoScreen : React.FC<BasicInfoProps> = ({ basicInfo, setBasicInfo })
     padding: 20,
   },
   modalContainer: {
-    backgroundColor: '#fff',
     borderRadius: 10,
     padding: 20,
     width: '100%',
@@ -314,21 +487,23 @@ const BasicInfoScreen : React.FC<BasicInfoProps> = ({ basicInfo, setBasicInfo })
   modalBtn: {
     flex: 1,
     marginHorizontal: 5,
-    backgroundColor: '#007BFF',
     paddingVertical: 10,
     borderRadius: 8,
   },
   modalBtnText: {
-    color: '#fff',
     fontSize: 16,
     textAlign: 'center',
   },
   exitBtn: {
     flex: 1,
     marginHorizontal: 5,
-    backgroundColor: 'gray',
     paddingVertical: 10,
     borderRadius: 8,
+  },
+  underConstructionBox: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center'
   }
   });
   

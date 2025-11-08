@@ -1,22 +1,31 @@
 import donationRequest from '@/apis/_helpers/donationRequest';
+import { useGetMasjidDetailsByMasjidId } from '@/apis/masjid/useGetMasjidDetailsByMasjidId';
+import MediaCarousel from '@/components/masjid-details/MediaCarousel';
 import { Theme } from '@/constants/types';
-import { getDisplayDistance } from '@/utils/getDisplayDistance';
 import { useRoute, useTheme } from '@react-navigation/native';
-import { Image } from 'expo-image';
 import React, { useState } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Dimensions, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import RazorpayCheckout from 'react-native-razorpay';
+import MasjidInfo from '../../../components/masjid-details/MasjidInfo';
+import Notifiations from '../../../components/masjid-details/Notifiations';
+import PrayerInfo from '../../../components/masjid-details/PrayerInfo';
+
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 const MasjidDetails = () => {
     const route :any = useRoute();
     const { colors } = useTheme() as Theme;
-    const [isLoading, setIsLoading] = useState(false);
+    const [isPaymentLoading, setIsPaymentLoading] = useState(false);
+    const [activeTab, setActiveTab] = useState(0);
+    
     // Access the params passed during navigation
   const { _id, name, address, images, distance } = route.params;
 
+  const { data, isLoading } = useGetMasjidDetailsByMasjidId(_id);
+
   const handleDonatePress = async () => {
-    if (isLoading) return;
-    setIsLoading(true);
+    if (isPaymentLoading) return;
+    setIsPaymentLoading(true);
 
     try {
       // --- STEP 1: Create the Order ---
@@ -70,7 +79,7 @@ const MasjidDetails = () => {
             console.error('Payment Verification Failed:', verifyError);
             alert('Your payment was successful but verification failed. Please contact support.');
           } finally {
-            setIsLoading(false);
+            setIsPaymentLoading(false);
           }
         })
         .catch((errorData) => {
@@ -79,56 +88,34 @@ const MasjidDetails = () => {
           if (errorData.code !== 0) { // 0 is 'Payment Cancelled by User'
              alert(`Error: ${errorData.description}`);
           }
-          setIsLoading(false);
+          setIsPaymentLoading(false);
         });
 
     } catch (orderError) {
       // --- Handle Order Creation Failure ---
       console.error('Failed to create order:', orderError);
       alert('Could not initiate donation. Please try again later.');
-      setIsLoading(false);
+      setIsPaymentLoading(false);
     }
   };
 
-  // const handleDonateButton = () => {
-  //   console.log(_id, 'Donate to masjid')
-  //   // Handle the donate button press
-  //     const options : CheckoutOptions = {
-  //     description: 'Credits towards consultation',
-  //     image: 'https://i.imgur.com/3g7nmJC.png',
-  //     currency: 'INR',
-  //     key: process.env.EXPO_PUBLIC_RAZORPAY_KEY_ID || '', // Your api key
-  //     amount: 5000,
-  //     name: 'foo',
-  //     order_id: _id, //Replace this with an order_id created using Orders API.
-  //     prefill: {
-  //       email: 'void@razorpay.com',
-  //       contact: '9191919191',
-  //       name: 'Razorpay Software'
-  //     },
-  //     theme: {color: colors.TINT}
-  //   }
-  //   RazorpayCheckout.open(options).then((data: any) => {
-  //     // handle success
-  //     alert(`Success: ${data.razorpay_payment_id}`);
-  //     console.log(data, 'sucess data')
-  //   }).catch((error: any) => {
-  //     // handle failure
-  //     console.log(error, 'error data')
-  //     alert(`Error: ${error.code} | ${error.description}`);
-  //   });
-  // }
   return (
     <View style={{ }}>
-      {images && images.length > 0 && (
+      {/* {images && images.length > 0 && (
         <Image source={{ uri: images[0] }} style={styles.image} />
-      )}
-      <ScrollView style={styles.container}>
+      )} */}
+      <View style={styles.mediaContainer}>
+        <MediaCarousel 
+          images = {images}
+          videoUrl = {(!isLoading && data && data?.videos && data?.videos?.length) ?  data?.videos?.[0] : ''}
+        />
+      </View>
+      {/* <ScrollView style={styles.container}>
         <View style={ styles.addressContainer }>
             <Text style={[styles.address, {color: colors.TEXT}]} numberOfLines={2} ellipsizeMode='tail'>{address}</Text>
             <Text style={{ color: colors.TINT }}>[{getDisplayDistance(distance)}]</Text>
-            {/* <Text style={{ color: colors.TINT }}>Donation Required</Text>
-            <Text style={{ color: colors.TINT }}>Donation received</Text> */}
+            <Text style={{ color: colors.TINT }}>Donation Required</Text>
+            <Text style={{ color: colors.TINT }}>Donation received</Text>
         </View>
 
         <View style={styles.donateButtonContainer}>
@@ -139,33 +126,77 @@ const MasjidDetails = () => {
             <Text style={[styles.donateButtonText, { color: colors.BUTTON_TEXT }]}>Donate</Text>
           </TouchableOpacity>
         </View>
-      </ScrollView>
+      </ScrollView> */}
+
+      {/* --- 2. TAB BAR (Unchanged) --- */}
+       {isLoading ? 
+       
+       <View style={styles.loaderContainer}>
+        <ActivityIndicator color={colors.TINT} size={50}/>
+       </View>
+       
+       :
+       
+       <View>
+
+         <View style={[styles.tabBarContainer, { borderBottomColor: colors.border }]}>
+            <TouchableOpacity
+              style={[styles.tab, activeTab === 0 && [styles.activeTab, { borderBottomColor: colors.BUTTON_BG }]]}
+              onPress={() => setActiveTab(0)}
+            >
+              <Text style={[styles.tabText, { color: colors.TEXT }, activeTab === 0 && [styles.activeTabText, { color: colors.TEXT }]]}>
+                Info
+              </Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[styles.tab, activeTab === 1 && [styles.activeTab, { borderBottomColor: colors.BUTTON_BG }]]}
+              onPress={() => setActiveTab(1)}
+            >
+              <Text style={[styles.tabText, { color: colors.TEXT }, activeTab === 1 && [styles.activeTabText, { color: colors.TEXT }]]}>
+                Prayer Timings
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.tab, activeTab === 2 && [styles.activeTab, { borderBottomColor: colors.BUTTON_BG }]]}
+              onPress={() => setActiveTab(2)}
+            >
+              <Text style={[styles.tabText, { color: colors.TEXT }, activeTab === 2 && [styles.activeTabText, { color: colors.TEXT }]]}>
+                Notifications
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {
+            activeTab === 0 ? 
+            <MasjidInfo /> :
+            activeTab === 1 ?
+            <PrayerInfo /> :
+            <Notifiations />
+          }
+       </View>}
     </View>
   )
 }
 
-export default MasjidDetails
 
 
 const styles = StyleSheet.create({
-    container: {
-        padding: 16,
-        overflow: 'hidden',
-    },
-    addressContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-    },
+  container: {
+    padding: 16,
+    overflow: 'hidden',
+  },
+  addressContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
     address: {
-        maxWidth: '70%',
-
-    },
-    image: {
-        width: '100%',
-        height: 300
+      maxWidth: '70%',
+      
     },
     text: {
-        marginVertical: 4,
+      marginVertical: 4,
     },
     donateButtonContainer: {
       alignItems:'center'
@@ -182,4 +213,37 @@ const styles = StyleSheet.create({
       fontSize: 16,
       fontWeight: 'bold',
     },
-})
+    tabBarContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+      borderBottomWidth: 1,
+    },
+    tab: {
+      flex: 1,
+      alignItems: 'center',
+      paddingVertical: 14,
+      borderBottomWidth: 2,
+      borderBottomColor: 'transparent',
+    },
+    activeTab: {
+      borderBottomWidth: 2,
+    },
+    tabText: {
+      fontSize: 16,
+      fontWeight: '500',
+    },
+    activeTabText: {
+      fontWeight: '700',
+    },
+    loaderContainer: {
+      height: 300,
+      maxHeight: SCREEN_HEIGHT/2,
+      justifyContent:'center'
+    },
+    mediaContainer:{
+      height: 300,
+      maxHeight: SCREEN_HEIGHT/2
+    }
+  })
+
+  export default MasjidDetails

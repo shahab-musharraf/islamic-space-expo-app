@@ -20,7 +20,6 @@ export const useCreateMasjidMutation = () => {
     },
 
     onError: (error: any) => {
-      console.log(error.code)
       Alert.alert(
         'Alert',
         error.code === 'ECONNABORTED' ? 'Request Timed Out. Please Try Again.' : 

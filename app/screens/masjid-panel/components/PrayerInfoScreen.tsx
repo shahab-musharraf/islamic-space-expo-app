@@ -47,6 +47,12 @@ const PrayerInfoScreen : React.FC<PrayerInfoProps> = ({ prayerInfo, setPrayerInf
       <Text style={styles.label}>Taraweeh</Text>
       <TextInput style={styles.input} value={prayerInfo.taraweeh} onChangeText={(text : string) => handleChangeInput("taraweeh", text)} placeholder="16:30" />
 
+      <Text style={styles.label}>Eid-Ul-Fitr</Text>
+      <TextInput style={styles.input} value={prayerInfo.eid_ul_fitr} onChangeText={(text : string) => handleChangeInput("eid_ul_fitr", text)} placeholder="13:00" />
+
+      <Text style={styles.label}>Eid-Ul-Azha</Text>
+      <TextInput style={styles.input} value={prayerInfo.eid_ul_azha} onChangeText={(text : string) => handleChangeInput("eid_ul_azha", text)} placeholder="16:30" />
+
     </ScrollView>
   )
 }

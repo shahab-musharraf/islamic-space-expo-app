@@ -39,20 +39,26 @@ const Index = () => {
       const accessToken = await getAccessToken();
       const refreshToken = await getRefreshToken();
 
+      console.log(accessToken, refreshToken, 'token found')
 
       if (accessToken) {
         const decoded = decodeJwt(accessToken);
         const isExpired = decoded?.exp && Date.now() >= decoded.exp * 1000;
         if (!isExpired) {
+          console.log('token is valid, restoring location')
           await restoreLocation();
+          console.log('location restored, navigating to tabs/index')
           navigation.reset({ index: 0, routes: [{ name: '(tabs)' }] });
+
           return;
         }
+        console.log('access token expired')
       }
 
       // Try refreshing the token
       if (refreshToken) {
         try {
+          console.log('trying refresh')
           const response = await axios.post(`${process.env.EXPO_PUBLIC_AUTH_SERVICE}/auth/refresh`, {
             refreshToken,
           });
@@ -60,22 +66,25 @@ const Index = () => {
           const newAccessToken = response.data?.accessToken;
           const newRefreshToken = response.data?.refreshToken;
 
+          console.log(newAccessToken, newRefreshToken, 'got new token')
+
           if (newAccessToken) {
             await setAccessToken(newAccessToken);
             if (newRefreshToken && newRefreshToken !== refreshToken) {
               await setRefreshToken(newRefreshToken);
             }
 
+            console.log('restoring location')
             await restoreLocation();
             navigation.reset({ index: 0, routes: [{ name: '(tabs)' }] });
             return;
           }
         } catch (err) {
-          console.log('deleting token')
-          console.log("Refresh failed", err);
         }
       }
 
+
+      console.log('deleting token')
       // Not authenticated
       await deleteAccessToken();
       await deleteRefreshToken();

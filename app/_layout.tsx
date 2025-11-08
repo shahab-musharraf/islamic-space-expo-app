@@ -42,12 +42,12 @@ function RootLayoutNav() {
           <Stack.Screen name="screens/masjid-panel/MasjidPanelScreen" options={{ headerShown: true, headerTitle: "Masjid Panel" }} />
           <Stack.Screen name="screens/masjid-panel/AddMasjidScreen" options={{ headerShown: true, headerTitle: "Add Masjid" }} />
           <Stack.Screen name="screens/home/MasjidDetails" options={
-            ({route}:any) => ({ headerTitle: route?.params?.name || 'Masjid Details' , headerShown: true})
+            ({route}:any) => ({ headerTitle: route?.params?.name || 'Masjid Details' , headerShown: true, headerTitleAlign: 'center'})
           } />
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="+not-found" />
         </Stack>
-        <StatusBar style="auto" />
+        <StatusBar style={theme === "dark" ? 'light' : 'dark'}/>
     </ThemeProvider>
   );
 }

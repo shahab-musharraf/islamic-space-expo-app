@@ -40,9 +40,9 @@ const Home = () => {
   
   // custom hooks and stores
   const { restoreLocation , clearLocation } = useUserLocationStore();
-  const { location, errorMsg, fetchLocation, handleExitApp, handleOpenSettings } = useUserLocation();
+  const { location, errorMsg, fetchLocation, handleExitApp, handleOpenSettings, isLoading:locationLoading } = useUserLocation();
   const { colors } = useTheme() as Theme ;
-  const { data, error, isLoading, refetch } = useGetAllNearbyMasjids(RADIUS, LIMIT, PAGE, searchValue);   // need to optimize search
+  const { data, error, isLoading, refetch } = useGetAllNearbyMasjids(RADIUS, LIMIT, PAGE, '');   // need to optimize search
 
   // react effects
 
@@ -87,10 +87,9 @@ const Home = () => {
   };
 
 
-  // return jsx
-  console.log(data , error, isLoading, '----------------------')
+  if(isLoading || locationLoading){
 
-  if(isLoading){
+    // add skeleton for below components
     return <Loader />;
   }
 
@@ -131,7 +130,8 @@ const Home = () => {
           value={searchValue}
           onChangeText={setSearchValue}
           placeholder="Search for Masjids"
-          style={[styles.input, { backgroundColor: colors.BG_SECONDARY, color: colors.TEXT_SECONDARY }]}
+          placeholderTextColor={colors.DISABLED_TEXT}
+          style={[styles.input, { backgroundColor: colors.BG_SECONDARY, color: colors.TEXT}]}
         />
 
 
@@ -139,9 +139,9 @@ const Home = () => {
 
         <View>
           {
-            data && data?.length === 0 ? (
-              <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                <Text style={{ color: colors.text }}>No Masjids Found</Text>
+            !data || (data && data?.length === 0) ? (
+              <View style={{ alignItems: 'center', justifyContent: 'center', height: '95%' }}>
+                <Text style={{ color: 'orange', fontSize: 16 }}>No Nearby Masjids Found</Text>
               </View>
             ) : 
             <ScrollView style={styles.masjidListContainer} contentContainerStyle={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 10 }}>  

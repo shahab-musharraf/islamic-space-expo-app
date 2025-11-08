@@ -10,9 +10,12 @@ import {
 } from 'react-native';
 // import { useMasjidsNearby } from '../hooks/useMasjidsNearby';
 import { useCreateMasjidMutation } from '@/apis/masjid/useCreateMasjid';
+import { Theme } from '@/constants/types';
+import { useTheme } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BasicInfoScreen from './components/BasicInfoScreen';
 import BudegetInfoScreen from './components/BudegetInfoScreen';
+import PaymentInfoScreen from './components/PaymentInfoScreen';
 import PrayerInfoScreen from './components/PrayerInfoScreen';
 
 export type Asset = {
@@ -21,6 +24,15 @@ export type Asset = {
   name: string;
   mimeType?: string;
 };
+
+export type PdfFile = {
+  copyError? : string | undefined;
+  fileCopyUri: string | null;
+  uri: string;
+  type: string | null// "image" | "video"
+  name: string | null
+  size: number | null
+}
 
 export interface BasicInfo {
   name: string;
@@ -32,6 +44,8 @@ export interface BasicInfo {
   longitude: string;
   images: Asset[];
   videos: Asset[];
+  isUnderConstruction: boolean;
+  secretaryName: string;
 }
 
 export interface BudgetInfo {
@@ -45,6 +59,15 @@ export interface BudgetInfo {
   noOfStaff: string;
 }
 
+export interface UnderConstructionBudgetInfo {
+  startDate: Date | null;
+  expectedEndDate: Date | null;
+  estimatedBudget: string;
+  constructingByRegisteredCompany: boolean;
+  offlineCollectedAmount: string;
+  budgetReport: PdfFile | null;
+}
+
 export interface PrayerInfo {
   fajr: string;
   dhuhr: string;
@@ -55,14 +78,28 @@ export interface PrayerInfo {
   iftaar: string;
   sehri: string;
   taraweeh: string;
+  eid_ul_fitr: string;
+  eid_ul_azha: string;
+
+}
+
+export interface PaymentInfo {
+  accountHolderName : string;
+  accountNumber : string;
+  ifscCode : string;
+  branch : string;
+  upiId : string;
+  qrCode: Asset
+
 }
 
 
-const STEP_COUNT = 3;
+const STEP_COUNT = 4;
 
 const AddMasjidScreen: React.FC = () => {
+    const { colors } = useTheme() as Theme;
+  
   const [step, setStep] = useState(1);
-
 
   const [basicInfo, setBasicInfo] = useState<BasicInfo>({
     name: '',
@@ -73,7 +110,9 @@ const AddMasjidScreen: React.FC = () => {
     latitude: '',
     longitude: '',
     images : [],
-    videos : []
+    videos : [],
+    isUnderConstruction: false,
+    secretaryName: ''
   })
 
   const [budgetInfo, setBudgetInfo] = useState<BudgetInfo>({
@@ -87,6 +126,15 @@ const AddMasjidScreen: React.FC = () => {
     noOfStaff: '',
   });
 
+  const [underConstructionBudgetInfo, setUnderConstructionBudgetInfo] = useState<UnderConstructionBudgetInfo>({
+    budgetReport: null,
+    constructingByRegisteredCompany: false,
+    estimatedBudget: '',
+    expectedEndDate: null,
+    offlineCollectedAmount: '',
+    startDate: null
+  })
+
   const [prayerInfo, setPrayerInfo] = useState<PrayerInfo>({
     fajr: '',
     dhuhr: '',
@@ -97,7 +145,22 @@ const AddMasjidScreen: React.FC = () => {
     iftaar: '',
     sehri: '',
     taraweeh: '',
+    eid_ul_fitr : '',
+    eid_ul_azha : ''
   });
+
+  const [paymentInfo, setPaymentInfo] = useState<PaymentInfo>({
+    accountHolderName: '',
+    accountNumber: '',
+    ifscCode: '',
+    branch: '',
+    upiId: '',
+    qrCode: {
+      name: '',
+      type: 'qrCode',
+      uri: ''
+    }
+  })
 
 
   const createMasjidMutation = useCreateMasjidMutation();
@@ -106,10 +169,14 @@ const AddMasjidScreen: React.FC = () => {
 
     try {
       const fd = new FormData();
+
       const {videos, images, ...remBasicInfo} = basicInfo;
+      const { qrCode, ...remPaymentInfo } = paymentInfo;
+
       fd.append('masjidInfo', JSON.stringify({remBasicInfo}));
       fd.append('budgetInfo', JSON.stringify(budgetInfo));
       fd.append('prayerInfo', JSON.stringify(prayerInfo));
+      fd.append('paymentInfo', JSON.stringify(remPaymentInfo))
 
       // we must append files as field 'media' multiple times (backend expects anyFiles)
       // convert local uri to blob and append
@@ -130,11 +197,11 @@ const AddMasjidScreen: React.FC = () => {
       // append images/videos
       for (const img of basicInfo.images) await appendFile(img, 'media');
       for (const vid of basicInfo.videos) await appendFile(vid, 'media');
+      await appendFile(qrCode, 'media')
 
       createMasjidMutation.mutate(fd, {
         onSuccess: (data) => {
           Alert.alert("✅ Masjid created successfully")
-          console.log("✅ Masjid created successfully:", data);
         },
       });
     } catch (err) {
@@ -148,13 +215,14 @@ const AddMasjidScreen: React.FC = () => {
     const widthPercent = (step / STEP_COUNT) * 100;
     return (
       <View style={styles.progressWrap}>
-        <View style={styles.progressBarBg}>
-          <View style={[styles.progressBarFill, { width: `${widthPercent}%` }]} />
+        <View style={[styles.progressBarBg, {backgroundColor: colors.DISABLED_TEXT}]}>
+          <View style={[styles.progressBarFill, { width: `${widthPercent}%`, backgroundColor: colors.TINT }]} />
         </View>
         <View style={styles.stepsRow}>
           <Text style={[styles.stepLabel, step === 1 && styles.stepActive]}>Basic</Text>
           <Text style={[styles.stepLabel, step === 2 && styles.stepActive]}>Budget</Text>
           <Text style={[styles.stepLabel, step === 3 && styles.stepActive]}>Prayers</Text>
+          <Text style={[styles.stepLabel, step === 4 && styles.stepActive]}>Payment</Text>
         </View>
       </View>
     );
@@ -162,27 +230,28 @@ const AddMasjidScreen: React.FC = () => {
 
   const handleNextBtn = () => {
 
-    // if((step === 1 && (
-    //   !basicInfo.name ||
-    //   !basicInfo.address ||
-    //   !basicInfo.city ||
-    //   !basicInfo.state ||
-    //   !basicInfo.pincode ||
-    //   !basicInfo.latitude ||
-    //   !basicInfo.longitude ||
-    //   basicInfo.images.length === 0 ||
-    //   basicInfo.videos.length === 0
-    // )) ){
-    //   Alert.alert(
-    //     "Incomplete Information",
-    //     "Please fill all required fields and upload at least one image and video."
-    //   );
-    //   return;
-    // }
+    if((step === 1 && (
+      !basicInfo.name ||
+      !basicInfo.address ||
+      !basicInfo.city ||
+      !basicInfo.state ||
+      !basicInfo.pincode ||
+      !basicInfo.latitude ||
+      !basicInfo.longitude ||
+      basicInfo.images.length === 0 ||
+      basicInfo.videos.length === 0
+    )) ){
+      Alert.alert(
+        "Incomplete Information",
+        "Please fill all required fields and upload at least one image and video."
+      );
+      return;
+    }
 
     setStep((s) => Math.min(STEP_COUNT, s + 1));
   }
 
+  console.log(paymentInfo, 'qrrrrrrrrrr')
 
   return (
     <SafeAreaView style={styles.container}>
@@ -190,8 +259,13 @@ const AddMasjidScreen: React.FC = () => {
 
       <View style={styles.content}>
         {step === 1 && <BasicInfoScreen basicInfo = {basicInfo} setBasicInfo = {setBasicInfo} />}
-        {step === 2 && <BudegetInfoScreen budgetInfo={budgetInfo} setBudgetInfo={setBudgetInfo} />}
+        {step === 2 && <BudegetInfoScreen budgetInfo={budgetInfo} setBudgetInfo={setBudgetInfo} 
+                        isUnderConstruction ={basicInfo.isUnderConstruction} 
+                        underConstructionBudgetInfo={underConstructionBudgetInfo}
+                        setUnderConstructionBudgetInfo ={setUnderConstructionBudgetInfo}
+        />}
         {step === 3 && <PrayerInfoScreen prayerInfo={prayerInfo} setPrayerInfo={setPrayerInfo} />}
+        {step === 4 && <PaymentInfoScreen paymentInfo={paymentInfo} setPaymentInfo={setPaymentInfo} />}
 
         <View style={{ flexDirection: 'row-reverse', gap: 8, height: 80, alignItems:'center' }}>
           
@@ -225,10 +299,10 @@ const AddMasjidScreen: React.FC = () => {
 export default AddMasjidScreen;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
+  container: { flex: 1, backgroundColor:'white' },
   progressWrap: { paddingHorizontal: 16 },
-  progressBarBg: { height: 2, backgroundColor: '#eee', borderRadius: 100, overflow: 'hidden' },
-  progressBarFill: { height: 2, backgroundColor: '#4f46e5', borderRadius: 100, width: '0%' },
+  progressBarBg: { height: 2, borderRadius: 100, overflow: 'hidden' },
+  progressBarFill: { height: 2,  borderRadius: 100, width: '0%' },
   stepsRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 },
   stepLabel: { fontSize: 12, color: '#666' },
   stepActive: { color: '#111', fontWeight: '700' },

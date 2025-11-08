@@ -12,8 +12,7 @@ export const useUpdateOtpMutation = () => {
       );
       return data;
     },
-    onSuccess: (data) => console.log('Mutation success:', data),
-  onError: (error) => console.error('Mutation error:', error),
-
+    onSuccess: (data) => {},
+  onError: (error) => {}
   });
 };
