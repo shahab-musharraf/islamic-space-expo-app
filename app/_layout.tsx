@@ -40,7 +40,13 @@ function RootLayoutNav() {
           <Stack.Screen name="auth/index" options={{ headerShown: false }} />
           <Stack.Screen name="screens/ProfileScreen" options={{ headerShown: false }} />
           <Stack.Screen name="screens/masjid-panel/MasjidPanelScreen" options={{ headerShown: true, headerTitle: "Masjid Panel" }} />
-          <Stack.Screen name="screens/masjid-panel/AddMasjidScreen" options={{ headerShown: true, headerTitle: "Add Masjid" }} />
+          <Stack.Screen name="screens/admin-panel/AdminPanelScreen" options={{ headerShown: true, headerTitle: "Admin Panel" }} />
+          <Stack.Screen name="screens/masjid-panel/AddMasjidScreen" options={
+            ({route}:any) => ({ headerTitle: route?.params?.masjidId ? 'Update Masjid' : 'Add Masjid' , headerShown: true, headerTitleAlign: 'center'})
+          } />
+          <Stack.Screen name="screens/masjid-panel/MasjidDetailsScreenPrivate" options={
+            ({route}:any) => ({ headerTitle: route?.params?.name || 'Masjid Details' , headerShown: true, headerTitleAlign: 'center'})
+          } />
           <Stack.Screen name="screens/home/MasjidDetails" options={
             ({route}:any) => ({ headerTitle: route?.params?.name || 'Masjid Details' , headerShown: true, headerTitleAlign: 'center'})
           } />

@@ -1,23 +1,20 @@
 import { useQuery } from "@tanstack/react-query";
 import mosqueRequest from "../_helpers/mosqueRequest";
 
-export const useGetAllMasjidsListedByUsername = (username:string) => {
+export const useGetAllMasjidsNeedCorrections = () => {
 
   const queryKey = [
-    "masjid",
-    username
+    `getAllMasjidsNeedCorrections/`
   ];
 
-
   return useQuery({
-    queryKey: queryKey,
-
+    queryKey: queryKey, // cache key
     queryFn: async () => {
       const { data } = await mosqueRequest.get(
-        `/masjid/added-by/${username}`
+        `/masjid/need-corrections`
       );
       return data;
     },
-    retry: 3
+    retry: 5
   });
 };

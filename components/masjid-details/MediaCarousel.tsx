@@ -19,7 +19,7 @@ const { width: screenWidth } = Dimensions.get('window');
 
 // --- Define the props interface ---
 interface MediaCarouselProps {
-  images?: string[];
+  images: string[];
   videoUrl: string;
 }
 
@@ -31,11 +31,8 @@ interface MediaItem {
 
 // --- Your Component ---
 const MediaCarousel: React.FC<MediaCarouselProps> = ({
-  images = [
-    'https://res.cloudinary.com/dzbahh8ya/image/upload/v1761329057/masjids/u1xnf4dodvpeethryrze.jpg',
-    'https://res.cloudinary.com/dzbahh8ya/image/upload/v1761329057/masjids/u1xnf4dodvpeethryrze.jpg',
-  ],
-  videoUrl = 'http://d23dyx6ukb2s6e.cloudfront.net/v/YmJ29sDqf_E.mp4'
+  images,
+  videoUrl
 }) => {
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);

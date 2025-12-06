@@ -1,3 +1,5 @@
+import AddImageIcon from "@/components/global/AddImageIcon";
+import AddVideoIcon from "@/components/global/AddVideoIcon";
 import { Theme } from "@/constants/types";
 import { useUserLocation } from "@/hooks/useUserLocation";
 import { useUserLocationStore } from "@/stores/userLocationStore";
@@ -6,7 +8,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@react-navigation/native";
 import { Image, ImageBackground } from "expo-image";
 import * as ImagePicker from 'expo-image-picker';
-import { useEffect } from "react";
+import React, { useEffect } from "react";
 import { ActivityIndicator, Alert, FlatList, Modal, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { Asset, BasicInfo } from "../AddMasjidScreen";
@@ -326,12 +328,17 @@ const BasicInfoScreen : React.FC<BasicInfoProps> = ({ basicInfo, setBasicInfo })
           </View>
         </View>
       </Modal>
-      <ScrollView style={[styles.stepContainer]}>
+      <ScrollView 
+        style={[styles.stepContainer]}
+      >
         <Text style={styles.label}>Masjid Name</Text>
         <TextInput style={styles.input} value={basicInfo.name} onChangeText={(text: string) => handleChangeInput('name', text)} placeholder="Masjid name" />
 
         <Text style={styles.label}>Secretary Name</Text>
         <TextInput style={styles.input} value={basicInfo.secretaryName} onChangeText={(text: string) => handleChangeInput('secretaryName', text)} placeholder="Secretary name" />
+
+        <Text style={styles.label}>Secretary Mobile</Text>
+        <TextInput style={styles.input} value={basicInfo.secretaryMobile} onChangeText={(text: string) => handleChangeInput('secretaryMobile', text)} placeholder="Secretary name" />
 
 
         <View>
@@ -343,8 +350,8 @@ const BasicInfoScreen : React.FC<BasicInfoProps> = ({ basicInfo, setBasicInfo })
         <TextInput style={styles.input} value={basicInfo.address} onChangeText={(text: string) => handleChangeInput('address', text)} placeholder="Address" multiline />
 
         <View style={{ flexDirection: 'row', gap: 8 }}>
-          <TextInput style={[styles.disabledInput, { flex: 1 }]} editable={location ? false : true} value={basicInfo.city} onChangeText={(text: string) => handleChangeInput('city', text)} placeholder="City" />
-          <TextInput style={[styles.disabledInput, { flex: 1 }]} editable={location ? false : true} value={basicInfo.state} onChangeText={(text: string) => handleChangeInput('state', text)} placeholder="State" />
+          <TextInput style={[styles.disabledInput, { flex: 1 }]} value={basicInfo.city} onChangeText={(text: string) => handleChangeInput('city', text)} placeholder="City" />
+          <TextInput style={[styles.disabledInput, { flex: 1 }]} value={basicInfo.state} onChangeText={(text: string) => handleChangeInput('state', text)} placeholder="State" />
         </View>
         <View style={{ flexDirection: 'row', gap: 8 }}>
           <TextInput 
@@ -352,20 +359,26 @@ const BasicInfoScreen : React.FC<BasicInfoProps> = ({ basicInfo, setBasicInfo })
             value={basicInfo.latitude} 
             onChangeText={(text: string) => handleChangeInput('latitude', text)} 
             placeholder="Latitude" 
-            editable= {location?.coords?.latitude ? false : true}
+            // editable= {location?.coords?.latitude ? false : true}
           />
           <TextInput 
             style={[styles.disabledInput, { flex: 1 }]}
             value={basicInfo.longitude} 
             onChangeText={(text: string) => handleChangeInput('longitude', text)}
             placeholder="Longitude" 
-            editable= {location?.coords?.latitude ? false : true}
+            // editable= {location?.coords?.latitude ? false : true}
           />
           
         </View>
 
         <Text style={styles.label}>Pincode</Text>
-        <TextInput style={styles.disabledInput} editable={location ? false: true} value={basicInfo.pincode} onChangeText={(text: string) => handleChangeInput('pincode', text)} placeholder="Pincode" keyboardType="numeric" />
+        <TextInput style={styles.disabledInput} 
+          // editable={location ? false: true} 
+          value={basicInfo.pincode} 
+          onChangeText={(text: string) => handleChangeInput('pincode', text)} 
+          placeholder="Pincode" 
+          keyboardType="numeric" 
+        />
 
         <View style={styles.underConstructionBox}>
           <Text style={[styles.label]}>Masjid is Under Construction</Text>
@@ -390,18 +403,25 @@ const BasicInfoScreen : React.FC<BasicInfoProps> = ({ basicInfo, setBasicInfo })
 
           <FlatList
             horizontal
-            data={basicInfo.images}
+            data={[ ...basicInfo.images,
+              { uri: 'islamic-space-image-icon-sample-placeholder-box-uri' }
+            ]}
             keyExtractor={(i) => i.uri}
-            renderItem={({ item }) => (
-              <View style={{ marginRight: 8 }}>
+            renderItem={({ item }) => {
+              if(item.uri === 'islamic-space-image-icon-sample-placeholder-box-uri'){
+                return <TouchableOpacity style={ styles.mediaSelectBox } onPress={pickImages}>
+                          <AddImageIcon size={32} color={colors.DISABLED_ICONS} />
+                      </TouchableOpacity>
+              }
+              return <View style={{ marginRight: 8 }}>
                 <Image source={{ uri: item.uri }} style={{ width: 110, height: 80, borderRadius: 6 }} />
                 <TouchableOpacity style={styles.removeBtn} onPress={() => removeImage(item.uri)}>
                   <Ionicons name="close-circle" size={20} color="#fff" />
                 </TouchableOpacity>
               </View>
-            )}
+            }}
           />
-        </View>
+          </View>
 
         <View style={{ marginTop: 12 }}>
           <Text style={styles.label}>Videos</Text>
@@ -416,10 +436,20 @@ const BasicInfoScreen : React.FC<BasicInfoProps> = ({ basicInfo, setBasicInfo })
 
           <FlatList
             horizontal
-            data={basicInfo.videos}
+            data={[...basicInfo.videos,
+              { uri: 'islamic-space-video-icon-sample-placeholder-box-uri', name: 'islamic-space-video-icon-sample-placeholder-box-name' }
+            ]}
             keyExtractor={(i) => i.uri}
-            renderItem={({ item }) => (
-              <View style={{ marginRight: 8, width: 140 }}>
+            renderItem={({ item }) => {
+
+              if(item.uri === 'islamic-space-video-icon-sample-placeholder-box-uri'){
+                return <TouchableOpacity style={ styles.mediaSelectBox } onPress={pickVideo}>
+                          <AddVideoIcon size={32} color={colors.DISABLED_ICONS} />
+                      </TouchableOpacity>
+              }
+
+
+              return <View style={{ marginRight: 8, width: 140 }}>
                   <ImageBackground
                       source={ item.uri ? {uri: item.uri} : require('@/assets/images/default-bg.png')} // use the thumbnail URI here
                       style={{ width: 140, height: 80, borderRadius: 6, overflow: 'hidden', justifyContent: 'center', alignItems: 'center' }}
@@ -433,7 +463,7 @@ const BasicInfoScreen : React.FC<BasicInfoProps> = ({ basicInfo, setBasicInfo })
                   <Ionicons name="close-circle" size={20} color="#fff" />
                 </TouchableOpacity>
               </View>
-            )}
+            }}
           />
         </View>
       </ScrollView>
@@ -468,6 +498,17 @@ const BasicInfoScreen : React.FC<BasicInfoProps> = ({ basicInfo, setBasicInfo })
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
+  },
+  mediaSelectBox: {
+    width: 110,
+    height: 80,
+    borderColor: '#ccc',
+    borderWidth: 2,
+    borderRadius: 6,
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8
   },
   modalContainer: {
     borderRadius: 10,
@@ -508,4 +549,4 @@ const BasicInfoScreen : React.FC<BasicInfoProps> = ({ basicInfo, setBasicInfo })
   });
   
 
-  export default BasicInfoScreen;
+  export default React.memo(BasicInfoScreen);

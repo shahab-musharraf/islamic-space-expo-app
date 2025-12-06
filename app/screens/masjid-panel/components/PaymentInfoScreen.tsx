@@ -4,7 +4,9 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import React from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { PaymentInfo } from '../AddMasjidScreen';
+
 
 
 interface PaymentInfoProps {
@@ -75,7 +77,14 @@ const PaymentInfoScreen : React.FC<PaymentInfoProps>= ({ paymentInfo, setPayment
 
 
 return (
-    <ScrollView>
+    <KeyboardAwareScrollView
+          style={styles.container}
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          // This enables it to scroll to the input automatically
+          enableOnAndroid={true} 
+          extraScrollHeight={20} // Fine-tune this if needed
+        >
       <ScrollView style={styles.stepContainer}>
         <Text style={styles.label}>Account Holder Name</Text>
         <TextInput style={styles.input} value={paymentInfo.accountHolderName} onChangeText={(text: string) => handleChangeInput('accountHolderName', text)} placeholder="Account Holder Name" />
@@ -98,7 +107,7 @@ return (
               <Text style={styles.btnText}>Select QR Code</Text>
             </TouchableOpacity>
             <TouchableOpacity style={[styles.btnOutline, styles.clearBtn]} onPress={handleClearImages}>
-              <Text>Clear</Text>
+              <Text style={{color: 'white'}}>Clear</Text>
             </TouchableOpacity>
           </View>
 
@@ -110,12 +119,19 @@ return (
           </View>}
         </View>
       </ScrollView>
-    </ScrollView>
+    </KeyboardAwareScrollView>
   )
 };
 
 
   const styles = StyleSheet.create({
+     container: {
+    flex: 1,
+  },
+  scrollContent: { // <-- ADD THIS NEW STYLE
+    flexGrow: 1,
+    // paddingBottom: 24, // Adds a little space at the very bottom
+  },
     stepContainer: { flex: 1 },
     label: { marginVertical: 6, fontSize: 14, fontWeight: '600' },
     input: { borderWidth: 1, borderColor: '#ddd', borderRadius: 8, padding: 10, backgroundColor: '#fff', marginBottom: 8 },

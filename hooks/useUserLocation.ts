@@ -104,6 +104,10 @@ export const useUserLocation = (): UseUserLocationResult => {
   // }, [setLocation])
 
   const fetchLocation = useCallback(async () => {
+    if(location) {
+      setErrorMsg('');
+      return;
+    }
     setIsLoading(true);
     setErrorMsg(null);
     console.log('Fetching Location ******************');
@@ -112,7 +116,9 @@ export const useUserLocation = (): UseUserLocationResult => {
       // 1️⃣ Request permission
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        setErrorMsg('Location permission denied. Please enable it in settings.');
+        if(!location){
+          setErrorMsg('Location permission denied. Please enable it in settings.');
+        }
         setIsLoading(false);
         return;
       }
@@ -121,9 +127,7 @@ export const useUserLocation = (): UseUserLocationResult => {
       // 2️⃣ Try to get the last known position (it's fast)
       let loc = await Location.getLastKnownPositionAsync();
 
-      // Check if it's null or too old (e.g., older than 5 minutes)
-      const fiveMinutesAgo = Date.now() - 5 * 60 * 1000;
-      if (!loc || loc.timestamp < fiveMinutesAgo) {
+      if (!loc) {
         console.log('Last known location is old or null. Fetching new one...');
         
         // 3️⃣ If no good cached location, get the current one
@@ -162,6 +166,7 @@ export const useUserLocation = (): UseUserLocationResult => {
         await fetchLocation();
       } else {
         setIsLoading(false);
+        setErrorMsg('')
       }
     };
 

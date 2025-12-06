@@ -28,7 +28,8 @@ interface MasjidCardProps {
   name: string;
   address: string;
   distance: number; // in km
-  images: string[]
+  images: string[];
+  videos: string[]
 
 }
 
@@ -39,7 +40,8 @@ export const MasjidCard: React.FC<MasjidCardProps> = ({
   name, 
   address,
   distance,
-  images
+  images,
+  videos
 }) => {
   const navigation :any = useNavigation();
   const { colors } = useTheme() as Theme;
@@ -66,7 +68,7 @@ export const MasjidCard: React.FC<MasjidCardProps> = ({
 
   // Handle navigation
   const handleViewPress = () => {
-    navigation.navigate('screens/home/MasjidDetails', { _id, name, images, address, distance });
+    navigation.navigate('screens/home/MasjidDetails', { _id, name, images, address, distance, videos });
     scale.value = withSpring(1, { damping: 10, stiffness: 100 });
   };
 

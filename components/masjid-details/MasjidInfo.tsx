@@ -1,10 +1,14 @@
 import React from 'react'
 import { Text, View } from 'react-native'
 
-const MasjidInfo = () => {
+const MasjidInfo = ({masjid} : {masjid:any}) => {
   return (
     <View>
-      <Text>MasjidInfo</Text>
+      <View>
+        <Text>Address:</Text>
+        <Text>{masjid.address}</Text>
+      </View>
+      
     </View>
   )
 }

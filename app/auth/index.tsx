@@ -107,6 +107,10 @@ export default function WelcomeScreen() {
       if (response) {
         showMessage(response);
         setOtpSent(true);
+        
+        setTimeout(() => {
+          inputs.current[0]?.focus();
+        }, 100); // slight delay ensures input ref is ready
       }
     } catch (err: any) {
       showMessage(err?.response?.data || 'Failed to send OTP');
@@ -214,7 +218,8 @@ const handleResend = () => {
                             {
                             text: 'Yes',
                             onPress: () => {
-                                setOtpSent(false); // 👈 Go back to phone input
+                              setOtp(['', '', '', '', '', '']);
+                              setOtpSent(false); // 👈 Go back to phone input
                             },
                             },
                         ]

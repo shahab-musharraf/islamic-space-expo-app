@@ -1,24 +1,22 @@
 import { useQuery } from "@tanstack/react-query";
 import mosqueRequest from "../_helpers/mosqueRequest";
 
-export const useGetMasjidDetailsByMasjidId = (masjidId: string) => {
-
-  if(!masjidId){
-    return;
-  }
+export const useGetAllSelfAddedMasjids = () => {
 
   const queryKey = [
-    `getMasjidDetails/${masjidId}`
+    "masjid/self-added"
   ];
 
+
   return useQuery({
-    queryKey: queryKey, // cache key
+    queryKey: queryKey,
+
     queryFn: async () => {
       const { data } = await mosqueRequest.get(
-        `/masjid/${masjidId}`
+        `masjid/self-added`
       );
       return data;
     },
-    retry: 5
+    retry: 3
   });
 };

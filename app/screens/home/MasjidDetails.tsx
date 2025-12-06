@@ -19,7 +19,7 @@ const MasjidDetails = () => {
     const [activeTab, setActiveTab] = useState(0);
     
     // Access the params passed during navigation
-  const { _id, name, address, images, distance } = route.params;
+  const { _id, name, address, images, distance, videos } = route.params;
 
   const { data, isLoading } = useGetMasjidDetailsByMasjidId(_id);
 
@@ -99,6 +99,7 @@ const MasjidDetails = () => {
     }
   };
 
+  console.log(data, isLoading, 'masjid details')
   return (
     <View style={{ }}>
       {/* {images && images.length > 0 && (
@@ -107,7 +108,7 @@ const MasjidDetails = () => {
       <View style={styles.mediaContainer}>
         <MediaCarousel 
           images = {images}
-          videoUrl = {(!isLoading && data && data?.videos && data?.videos?.length) ?  data?.videos?.[0] : ''}
+          videoUrl = {videos && videos?.length ? videos[0] : (!isLoading && data && data?.videos && data?.videos?.length) ?  data?.videos?.[0] : ''}
         />
       </View>
       {/* <ScrollView style={styles.container}>
@@ -129,13 +130,6 @@ const MasjidDetails = () => {
       </ScrollView> */}
 
       {/* --- 2. TAB BAR (Unchanged) --- */}
-       {isLoading ? 
-       
-       <View style={styles.loaderContainer}>
-        <ActivityIndicator color={colors.TINT} size={50}/>
-       </View>
-       
-       :
        
        <View>
 
@@ -169,13 +163,22 @@ const MasjidDetails = () => {
           </View>
 
           {
+            isLoading ? 
+       
+            <View style={styles.loaderContainer}>
+              <ActivityIndicator color={colors.TINT} size={50}/>
+            </View> :
+            !data ? 
+            <View style={styles.noDataFoundContainer}>
+              <Text style={{ color: 'red' }}>No data found</Text>
+            </View> :
             activeTab === 0 ? 
-            <MasjidInfo /> :
+            <MasjidInfo masjid={data}/> :
             activeTab === 1 ?
             <PrayerInfo /> :
             <Notifiations />
           }
-       </View>}
+       </View>
     </View>
   )
 }
@@ -243,6 +246,12 @@ const styles = StyleSheet.create({
     mediaContainer:{
       height: 300,
       maxHeight: SCREEN_HEIGHT/2
+    },
+    noDataFoundContainer: {
+      height: 300,
+      maxHeight: SCREEN_HEIGHT/2,
+      justifyContent:'center',
+      alignItems:'center'
     }
   })
 

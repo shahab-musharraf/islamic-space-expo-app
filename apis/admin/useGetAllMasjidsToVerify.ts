@@ -1,21 +1,17 @@
 import { useQuery } from "@tanstack/react-query";
 import mosqueRequest from "../_helpers/mosqueRequest";
 
-export const useGetMasjidDetailsByMasjidId = (masjidId: string) => {
-
-  if(!masjidId){
-    return;
-  }
+export const useGetAllMasjidsToVerify = () => {
 
   const queryKey = [
-    `getMasjidDetails/${masjidId}`
+    `getMasjidDetailsToVerify/`
   ];
 
   return useQuery({
     queryKey: queryKey, // cache key
     queryFn: async () => {
       const { data } = await mosqueRequest.get(
-        `/masjid/${masjidId}`
+        `/masjid/to-verify`
       );
       return data;
     },

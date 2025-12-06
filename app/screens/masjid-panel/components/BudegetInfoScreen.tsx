@@ -75,29 +75,48 @@ const BudegetInfoScreen : React.FC<BudgetInfoProps> = ({ budgetInfo, setBudgetIn
       }))
   }
 
-  const handleSelectPdf = async () => {
-    try {
-      const result  = await DocumentPicker.getDocumentAsync();
-      console.log(result, 'document picked up')
-      
-      // setUnderConstructionBudgetInfo((prev:UnderConstructionBudgetInfo) => ({
-      //   ...prev,
-      //   budgetReport : result
-      // }))
+const handleSelectPdf = async () => {
+  try {
+    // 1. Call getDocumentAsync, passing the 'type' option
+    const result = await DocumentPicker.getDocumentAsync({
+      type: 'application/pdf', // Only allow PDFs
+      copyToCacheDirectory: true, // Default, but good to be explicit
+    });
 
-      // You can now use this file, e.g., prepare it for upload
-      // setBudgetInfo(prev => ({ ...prev, budgetReport: result }));
+    console.log(result, 'document picked up');
 
-    } catch (err) {
-      // if (DocumentPicker.isCancel(err)) {
-      //   // User cancelled the picker
-      //   console.log('User cancelled PDF selection');
-      // } else {
-      //   // Handle other errors
-      //   console.error('Error picking PDF:', err);
-      // }
+    // 2. Check if the user CANCELED (the correct check)
+    // The 'canceled' property is the key, based on the docs.
+    if (result.canceled) {
+      return; // Exit the function
     }
-  };
+
+    // 3. Handle success (if NOT canceled)
+    // The 'assets' property is an ARRAY, even for a single file.
+    // We get the first item from the array.
+    if (result.assets && result.assets.length > 0) {
+      const selectedPdf = result.assets[0];
+
+      console.log('PDF Selected: ', selectedPdf.name, selectedPdf.uri);
+      setUnderConstructionBudgetInfo((prev:UnderConstructionBudgetInfo) => ({
+        ...prev,
+        budgetReport: {
+          name: selectedPdf.name,
+          uri: selectedPdf.uri,
+          type: 'application/pdf',
+          mimeType: 'application/pdf'
+        }
+      }))
+
+    } else {
+      // This should not happen if canceled=false, but good to check
+      console.log('No assets found, though operation was not cancelled.');
+    }
+
+  } catch (err) {
+    console.error('Unknown error while picking document:', err);
+  }
+};
 
 
   return (
@@ -115,29 +134,33 @@ const BudegetInfoScreen : React.FC<BudgetInfoProps> = ({ budgetInfo, setBudgetIn
             <Text style={styles.label}>No. of Moazzins</Text>
             <TextInput style={styles.input} value={budgetInfo.noOfMoazzins} onChangeText={(text : string) => handleChangeInput("noOfMoazzins", text)} keyboardType="numeric" />
 
-            <Text style={styles.label}>Moazzin Salary <Text style={{ color: colors.DISABLED_TEXT}}>{'(per month)'}</Text></Text>
+            <Text style={styles.label}>One Moazzin Salary <Text style={{ color: colors.DISABLED_TEXT}}>{'(per month)'}</Text></Text>
             <TextInput style={styles.input} value={budgetInfo.moazzinSalary} onChangeText={(text : string) => handleChangeInput("moazzinSalary", text)} keyboardType="numeric" />
 
             <Text style={styles.label}>No. of Staff</Text>
             <TextInput style={styles.input} value={budgetInfo.noOfStaff} onChangeText={(text : string) => handleChangeInput("noOfStaff", text)} keyboardType="numeric" />
 
-            <Text style={styles.label}>Staff Salary</Text>
+            <Text style={styles.label}>One Staff Salary <Text style={{ color: colors.DISABLED_TEXT}}>{'(per month)'}</Text></Text>
             <TextInput style={styles.input} value={budgetInfo.staffSalary} onChangeText={(text : string) => handleChangeInput("staffSalary", text)} keyboardType="numeric" />
 
-            <Text style={styles.label}>Electricity Bill</Text>
+            <Text style={styles.label}>Electricity Bill <Text style={{ color: colors.DISABLED_TEXT}}>{'(approx per month)'}</Text></Text>
             <TextInput style={styles.input} value={budgetInfo.electricityBill} onChangeText={(text : string) => handleChangeInput("electricityBill", text)} keyboardType="numeric" />
 
-            <Text style={styles.label}>Water Bill</Text>
+            <Text style={styles.label}>Water Bill <Text style={{ color: colors.DISABLED_TEXT}}>{'(approx per month)'}</Text></Text>
             <TextInput style={styles.input} value={budgetInfo.waterBill} onChangeText={(text : string) => handleChangeInput("waterBill", text)} keyboardType="numeric" />
 
-            <Text style={styles.label}>Maintenance</Text>
+            <Text style={styles.label}>Maintenance <Text style={{ color: colors.DISABLED_TEXT}}>{'(approx per month)'}</Text></Text>
             <TextInput style={styles.input} value={budgetInfo.maintenance} onChangeText={(text : string) => handleChangeInput("maintenance", text)} keyboardType="numeric" />
 
-            <Text style={styles.label}>Other Expenses</Text>
+            <Text style={styles.label}>Other Expenses <Text style={{ color: colors.DISABLED_TEXT}}>{'(approx per month)'}</Text></Text>
             <TextInput style={styles.input} value={budgetInfo.otherExpenses} onChangeText={(text : string) => handleChangeInput("otherExpenses", text)} keyboardType="numeric" />
 
-            <View style={{ marginTop: 12 }}>
-              <Text style={{ fontWeight: '700' }}>Total: ₹ {totalBudget().toFixed(2)}</Text>
+            <Text style={styles.label}>Offline Collected Amount <Text style={{ color: colors.DISABLED_TEXT}}>{'(this month)'}</Text></Text>
+            <TextInput style={styles.input} value={budgetInfo.offlineCollectedAmount} onChangeText={(text : string) => handleChangeInput("offlineCollectedAmount", text)} keyboardType="numeric" />
+
+
+            <View style={{ marginVertical: 12 }}>
+              <Text style={{ fontWeight: '700', fontSize: 16 }}>Total Amount Required: ₹ {Number(totalBudget().toFixed(2)) - Number(budgetInfo.offlineCollectedAmount)}</Text>
             </View>
           </View>: 
           <View>
@@ -202,12 +225,16 @@ const BudegetInfoScreen : React.FC<BudgetInfoProps> = ({ budgetInfo, setBudgetIn
             {/* 👇 4. Replace your TextInput with this */}
             <Text style={styles.label}>Upload Budget Report <Text style={{ color: colors.DISABLED_TEXT}}>{'(pdf format)'}</Text></Text>
             
-            <Pressable style={styles.input} onPress={handleSelectPdf}>
+            <Pressable style={[styles.fileInput, {backgroundColor: 'colors.DISABLED_INPUT_BG'}]} onPress={handleSelectPdf}>
               <Text style={underConstructionBudgetInfo.budgetReport ? styles.fileName : styles.placeholder}>
-                {underConstructionBudgetInfo.budgetReport ? underConstructionBudgetInfo.budgetReport.name : 'Tap to select a PDF file'}
+                {underConstructionBudgetInfo.budgetReport.name ? underConstructionBudgetInfo.budgetReport.name : 'Tap to select a PDF file'}
               </Text>
             </Pressable>
-            
+
+            {underConstructionBudgetInfo.constructingByRegisteredCompany ? 
+            <Text style={{color: 'red'}}>Note: Please ensure the Budget Report includes an official signature and stamp from your construction company for verification.</Text>
+              : <Text  style={{color: 'red'}}>Note: Please ensure the Budget Report is signed by the project's authorized person or committee head.</Text>
+          }
 
           </View>
           }
@@ -215,7 +242,7 @@ const BudegetInfoScreen : React.FC<BudgetInfoProps> = ({ budgetInfo, setBudgetIn
   )
 }
 
-export default BudegetInfoScreen;
+export default React.memo(BudegetInfoScreen);
 
 const styles = StyleSheet.create({
   container: {
@@ -250,7 +277,6 @@ const styles = StyleSheet.create({
     borderColor: '#ddd',
     borderRadius: 8,
     padding: 10,
-    backgroundColor: '#fff',
     marginBottom: 8,
     minHeight: 50,
     justifyContent: 'center',
@@ -259,6 +285,7 @@ const styles = StyleSheet.create({
   // 👇 Add these styles
   placeholder: {
     color: '#aaa',
+
   },
   fileName: {
     color: '#000',

@@ -8,24 +8,41 @@ import Entypo from '@expo/vector-icons/Entypo';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import { useTheme } from '@react-navigation/native';
 import { Image } from 'expo-image';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Animated, Dimensions, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+// This function converts a noisy string into a sequential regex pattern
+const createSequentialRegex = (input:string) => {
+    // 1. Remove consecutive duplicates (e.g., 'aaaaa' -> 'a')
+    // and convert to lowercase for case-insensitive matching.
+    const uniqueSequence = input.toLowerCase().replace(/(.)\1+/g, '$1');
+
+    // 2. Escape any special regex characters in the sequence.
+    const escapedSequence = uniqueSequence.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+    // 3. Insert '.*' between every character to allow for 
+    // zero or more other characters in between.
+    const regexString = escapedSequence.split('').join('.*');
+
+    // 4. Create the final case-insensitive regex object.
+    return new RegExp(regexString, 'i');
+};
 
 interface MasjidCardProps {
   _id: string;
   name: string;
   address: string;
   distance: number; // in km
-  images: string[]
+  images: string[];
+  videos: string[];
 
 }
 
 // Get screen height and define modal height (1/4 of screen)
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 // const MODAL_HEIGHT = SCREEN_HEIGHT / 4;
-const MODAL_HEIGHT = 150;
+const MODAL_HEIGHT = SCREEN_HEIGHT ? SCREEN_HEIGHT/3: 200;
 const PAGE = '1';
 const LIMIT = '20';
 const RADIUS = '50';
@@ -36,13 +53,29 @@ const Home = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [updateLocationLoading, setUpdateLocationLoading] = useState(false);
   const [searchValue, setSearchValue] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const slideAnim = useRef(new Animated.Value(-MODAL_HEIGHT)).current;      // Set up animated value, starting off-screen (top)
   
   // custom hooks and stores
   const { restoreLocation , clearLocation } = useUserLocationStore();
   const { location, errorMsg, fetchLocation, handleExitApp, handleOpenSettings, isLoading:locationLoading } = useUserLocation();
   const { colors } = useTheme() as Theme ;
-  const { data, error, isLoading, refetch } = useGetAllNearbyMasjids(RADIUS, LIMIT, PAGE, '');   // need to optimize search
+  const { data, error, isLoading } = useGetAllNearbyMasjids(RADIUS, LIMIT, PAGE, '');   // need to optimize search
+
+  const filteredData = useMemo(() => {
+    // Create the regex only once per memoization cycle
+    const sequentialRegex = createSequentialRegex(searchQuery);
+
+    if (!isLoading && data && data.length && searchQuery) {
+        return data.filter((masjid:any) => 
+            // Check if the regex pattern is found in the name or address
+            sequentialRegex.test(masjid.name) || 
+            sequentialRegex.test(masjid.address)
+        );
+    }
+    return data;
+  }, [isLoading, data, searchQuery])
+
 
   // react effects
 
@@ -87,20 +120,7 @@ const Home = () => {
   };
 
 
-  if(isLoading || locationLoading){
 
-    // add skeleton for below components
-    return <Loader />;
-  }
-
-
-  if(error){
-    return (
-      <SafeAreaView style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <Text style={{ color: colors.text }}>Some Error Occured</Text>
-      </SafeAreaView>
-    )
-  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -137,15 +157,25 @@ const Home = () => {
 
       
 
-        <View>
+        {isLoading || locationLoading ?
+          <View style={{ alignItems: 'center', justifyContent: 'center', height: '95%' }}>
+                <Loader />
+              </View>
+          :
+          error ? (
+            <SafeAreaView style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+              <Text style={{ color: colors.text }}>Some Error Occured</Text>
+            </SafeAreaView>
+          ): 
+          <View>
           {
-            !data || (data && data?.length === 0) ? (
+            !filteredData || (filteredData && filteredData?.length === 0) ? (
               <View style={{ alignItems: 'center', justifyContent: 'center', height: '95%' }}>
                 <Text style={{ color: 'orange', fontSize: 16 }}>No Nearby Masjids Found</Text>
               </View>
             ) : 
             <ScrollView style={styles.masjidListContainer} contentContainerStyle={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 10 }}>  
-              {data?.map((masjid : MasjidCardProps) => (
+              {filteredData?.map((masjid : MasjidCardProps) => (
                   <MasjidCard 
                     key={masjid._id}
                     {...masjid}
@@ -153,7 +183,7 @@ const Home = () => {
             ))}
             </ScrollView>
           }
-        </View>
+        </View>}
 
       </View>
 
@@ -257,7 +287,7 @@ const styles = StyleSheet.create({
     paddingRight: 30,
     paddingBlock: 5,
     borderRadius: 8,
-    maxWidth:'60%'
+    maxWidth:'60%',
   },
 
   modalBackdrop: {
@@ -301,13 +331,17 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.4)', // Dimmed background
   },
   addressModalContainer: {
-    position: 'absolute', // Position at the top
-    top: 0,
+    // position: 'absolute', // Position at the top
+    // top: 0,
     width: '100%',
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    paddingTop: 40,
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
-    gap: 15
+    gap: 15,
+    justifyContent: 'space-between',
+    height: 400
   },
   addressModalBox: {
     width: '100%',
