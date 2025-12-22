@@ -44,6 +44,8 @@ function RootLayoutNav() {
           <Stack.Screen name="screens/masjid-panel/AddMasjidScreen" options={
             ({route}:any) => ({ headerTitle: route?.params?.masjidId ? 'Update Masjid' : 'Add Masjid' , headerShown: true, headerTitleAlign: 'center'})
           } />
+          <Stack.Screen name="screens/global/PrayerTimingScreen" options={{ headerTitle: 'Update Salah Timings' , headerShown: true, headerTitleAlign: 'center'}
+          } />
           <Stack.Screen name="screens/masjid-panel/MasjidDetailsScreenPrivate" options={
             ({route}:any) => ({ headerTitle: route?.params?.name || 'Masjid Details' , headerShown: true, headerTitleAlign: 'center'})
           } />

@@ -17,7 +17,7 @@ interface PrayerInfoProps {
 }
 
 // --- UPDATED: Placeholders now use 12-hour AM/PM format ---
-const PRAYER_FIELDS: { key: keyof PrayerInfo; label: string; placeholder: string, mandatory: boolean }[] = [
+export const PRAYER_FIELDS: { key: keyof PrayerInfo; label: string; placeholder: string, mandatory: boolean }[] = [
   { key: 'fajr', label: 'Fajr', placeholder: '05:30 AM', mandatory: true },
   { key: 'dhuhr', label: 'Dhuhr', placeholder: '01:00 PM', mandatory: true },
   { key: 'asr', label: 'Asr', placeholder: '04:30 PM', mandatory: true },

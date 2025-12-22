@@ -1,27 +1,49 @@
 import donationRequest from '@/apis/_helpers/donationRequest';
+import { useAddMasjidToFavoriteMutation } from '@/apis/favoriteMosque/useAddMasjidToFavoriteMutation';
+import { useRemoveMasjidFromFavoriteMutation } from '@/apis/favoriteMosque/useRemoveMasjidFromFavoriteMutation';
+import { useToggleFollowMajisMutation } from '@/apis/favoriteMosque/useToggleFollowMajisMutation';
 import { useGetMasjidDetailsByMasjidId } from '@/apis/masjid/useGetMasjidDetailsByMasjidId';
 import MediaCarousel from '@/components/masjid-details/MediaCarousel';
 import { Theme } from '@/constants/types';
+import { useFavoriteMasjidStore } from '@/stores/useFavoriteMasjidStore';
+import StarOutlineIcon from '@expo/vector-icons/Feather';
+import StarFilledIcon from '@expo/vector-icons/FontAwesome';
 import { useRoute, useTheme } from '@react-navigation/native';
 import React, { useState } from 'react';
-import { ActivityIndicator, Dimensions, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Dimensions, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import RazorpayCheckout from 'react-native-razorpay';
 import MasjidInfo from '../../../components/masjid-details/MasjidInfo';
 import Notifiations from '../../../components/masjid-details/Notifiations';
 import PrayerInfo from '../../../components/masjid-details/PrayerInfo';
 
+const Colors = {
+  PRIMARY: '#4CAF50',
+  DANGER: '#F44336',
+  WARNING: '#FF9800',
+  TEXT: '#333333',
+  SUBTEXT: '#666666',
+  CARD_BG: '#FFFFFF',
+  SHADOW_COLOR: '#000000',
+  INFO: '#1E88E5',
+  MUTED: '#F2F4F7',
+};
+
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 const MasjidDetails = () => {
     const route :any = useRoute();
+    const { hydrated, isFavorite, isFollowing, setFavorite, favorites, following, reset } = useFavoriteMasjidStore();
+    const { mutate: addMasjidToFavorite, isPending: addMasjidToFavoriteLoading } = useAddMasjidToFavoriteMutation();
+    const { mutate: removeMasjidFromFavorite, isPending: removeMasjidFromFavoriteLoading } = useRemoveMasjidFromFavoriteMutation();
+    const { mutate: toggleFollow, isPending: toggleFollowLoading } = useToggleFollowMajisMutation()
     const { colors } = useTheme() as Theme;
     const [isPaymentLoading, setIsPaymentLoading] = useState(false);
     const [activeTab, setActiveTab] = useState(0);
     
     // Access the params passed during navigation
-  const { _id, name, address, images, distance, videos } = route.params;
+  const { _id, name, address,  } = route.params;
 
-  const { data, isLoading } = useGetMasjidDetailsByMasjidId(_id);
+  const { data, isLoading, isError, isRefetching } = useGetMasjidDetailsByMasjidId(_id);
 
   const handleDonatePress = async () => {
     if (isPaymentLoading) return;
@@ -99,7 +121,177 @@ const MasjidDetails = () => {
     }
   };
 
-  console.log(data, isLoading, 'masjid details')
+  
+
+  // const handleAddToFavorite = () => {
+  //   if(!_id) return;
+    
+  //   try {
+  //     addMasjidToFavorite(_id, {
+  //       onSuccess: (data) => {
+  //         if(!data.success) return;
+  //         console.log(data, 'added masjid to favorite response')
+  //         setFavorite({following: data.following ? data.masjidId : following, favorites: [...favorites, data.masjidId]})
+  //         Alert.alert("This masjid has been added to you favorite")
+  //       }
+  //     });
+  //   } catch (error) {
+      
+  //   }
+  //   console.log('add to favorite', _id);
+  // }
+
+  const handleAddToFavorite = () => {
+  if (!_id) return;
+
+  Alert.alert(
+    "Add to Favorites",
+    "Are you sure you want to add this masjid to your favorites?",
+    [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Yes",
+        onPress: () => {
+          addMasjidToFavorite(_id, {
+            onSuccess: (data) => {
+              if (!data.success) return;
+              setFavorite({
+                following: data.following ? data.masjidId : following,
+                favorites: [...favorites, data.masjidId],
+              });
+              Alert.alert("Added to favorites");
+            },
+          });
+        },
+      },
+    ]
+  );
+};
+
+
+  // const handleRemoveFromFavorite = () => {
+  //   if(!_id) return;
+
+  //   try {
+  //     removeMasjidFromFavorite(_id, {
+  //       onSuccess: (data) => {
+  //         if(!data.success) return;
+  //         console.log(data, 'removed masjid from favorite response')
+  //         setFavorite({following: data.following ? null : following, favorites: favorites.filter(id => id !== data.masjidId)})
+  //         Alert.alert("This masjid has been removed from your favorite")
+  //       }
+  //     });
+  //   } catch (error) {
+      
+  //   }
+
+  //   console.log('remove from favorite', _id)
+  // }
+  const handleRemoveFromFavorite = () => {
+  if (!_id) return;
+
+  Alert.alert(
+    "Remove Favorite",
+    "Do you really want to remove this masjid from your favorites?",
+    [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Remove",
+        style: "destructive",
+        onPress: () => {
+          removeMasjidFromFavorite(_id, {
+            onSuccess: (data) => {
+              if (!data.success) return;
+              setFavorite({
+                following: data.following ? null : following,
+                favorites: favorites.filter(id => id !== data.masjidId),
+              });
+              Alert.alert("Removed from favorites");
+            },
+          });
+        },
+      },
+    ]
+  );
+};
+
+
+  console.log(following)
+
+  // const handleToggleFollow = () => {
+  //   const follow = isFollowing(_id)
+  //   try {
+  //     toggleFollow({ follow : !follow, masjidId: _id }, {
+  //       onSuccess: (data) => {
+  //         if(!data || !data.success) return;
+  //         setFavorite({
+  //           favorites: favorites,
+  //           following: data.following ? data.masjidId : null
+  //         })
+  //       }
+  //     })
+  //   } catch (error) {
+      
+  //   }
+  // }
+  const handleToggleFollow = () => {
+  const follow = isFollowing(_id);
+
+  Alert.alert(
+    follow ? "Unfollow Masjid" : "Follow Masjid",
+    follow
+      ? "Are you sure you want to unfollow this masjid?"
+      : "Do you want to follow this masjid?",
+    [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: follow ? "Unfollow" : "Follow",
+        onPress: () => {
+          toggleFollow(
+            { follow: !follow, masjidId: _id },
+            {
+              onSuccess: (data) => {
+                if (!data || !data.success) return;
+                setFavorite({
+                  favorites,
+                  following: data.following ? data.masjidId : null,
+                });
+              },
+            }
+          );
+        },
+      },
+    ]
+  );
+};
+
+
+
+
+  if (isLoading || isRefetching) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color={Colors.INFO} />
+      </View>
+    );
+  }
+
+  if (isError) {
+    return (
+      <View style={styles.center}>
+        <Text style={{ color: Colors.DANGER }}>Error loading data. Please try again.</Text>
+      </View>
+    );
+  }
+
+  if (!data || data.length === 0) {
+    return (
+      <View style={styles.center}>
+        <Text style={{ color: Colors.SUBTEXT }}>No Masjids awaiting review.</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={{ }}>
       {/* {images && images.length > 0 && (
@@ -107,9 +299,50 @@ const MasjidDetails = () => {
       )} */}
       <View style={styles.mediaContainer}>
         <MediaCarousel 
-          images = {images}
-          videoUrl = {videos && videos?.length ? videos[0] : (!isLoading && data && data?.videos && data?.videos?.length) ?  data?.videos?.[0] : ''}
+          images = {data ? data.images : []}
+          videoUrl = {data && data.videos ? data.videos[0] : ''}
         />
+
+        <View style={styles.actionContainer}>
+        {/* Follow Button */}
+        {isFavorite(_id) && <TouchableOpacity
+          onPress={handleToggleFollow}
+          activeOpacity={0.85}
+          style={[
+            styles.followButton,
+            isFollowing(_id) ? styles.following : styles.follow,
+          ]}
+          disabled={toggleFollowLoading}
+        >
+          <Text
+            style={[
+              styles.followText,
+              isFollowing(_id) ? styles.followingText : styles.followTextActive,
+            ]}
+          >
+            {
+              toggleFollowLoading ? <ActivityIndicator color={"black"} size={14}/> : isFollowing(_id) ? "Following" : "Follow"
+            }
+          </Text>
+        </TouchableOpacity>}
+
+        {/* Favorite Icon */}
+        <TouchableOpacity
+          onPress={isFavorite(_id) ? handleRemoveFromFavorite : handleAddToFavorite}
+          activeOpacity={0.85}
+          style={styles.favoriteIcon}
+          disabled={addMasjidToFavoriteLoading || removeMasjidFromFavoriteLoading}
+        >
+          {
+          addMasjidToFavoriteLoading || removeMasjidFromFavoriteLoading ? <ActivityIndicator color={"white"}  size={20}/> :
+          isFavorite(_id) ? (
+            <StarFilledIcon name="star" size={18} color="#FFD700" />
+          ) : (
+            <StarOutlineIcon name="star" size={18} color="#fff" />
+          )}
+        </TouchableOpacity>
+      </View>
+
       </View>
       {/* <ScrollView style={styles.container}>
         <View style={ styles.addressContainer }>
@@ -198,12 +431,84 @@ const styles = StyleSheet.create({
       maxWidth: '70%',
       
     },
+  favoriteContainer: {
+
+    position: 'absolute',
+    top: 10,
+    right: 16,
+    flexDirection: 'row',
+    justifyContent:'center'
+  },
+  followBtn: {},
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+
     text: {
       marginVertical: 4,
     },
     donateButtonContainer: {
       alignItems:'center'
     },
+    actionContainer: {
+  position: "absolute",
+  top: 12,
+  right: 12,
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 8, // spacing between button & icon
+},
+
+followButton: {
+  paddingHorizontal: 14,
+  paddingVertical: 6,
+  borderRadius: 18,
+  borderWidth: 1,
+  minWidth: 90,
+  alignItems: "center",
+  justifyContent: "center",
+  shadowColor: "#000",
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.15,
+  shadowRadius: 4,
+  elevation: 3,
+},
+
+follow: {
+  backgroundColor: "#1DA1F2",
+  borderColor: "#1DA1F2",
+},
+
+following: {
+  backgroundColor: "rgba(255,255,255,0.95)",
+  borderColor: "#ddd",
+},
+
+followText: {
+  fontSize: 13,
+  fontWeight: "600",
+},
+
+followTextActive: {
+  color: "#fff",
+},
+
+followingText: {
+  color: "#333",
+},
+
+favoriteIcon: {
+  width: 34,
+  height: 34,
+  borderRadius: 17,
+  backgroundColor: "rgba(0,0,0,0.55)",
+  alignItems: "center",
+  justifyContent: "center",
+  shadowColor: "#000",
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.2,
+  shadowRadius: 4,
+  elevation: 3,
+},
+
     donateButton: {
       justifyContent: 'center',
       alignItems: 'center',
@@ -252,6 +557,15 @@ const styles = StyleSheet.create({
       maxHeight: SCREEN_HEIGHT/2,
       justifyContent:'center',
       alignItems:'center'
+    },
+    button: {
+      // paddingVertical: 6,
+      paddingHorizontal: 16,
+      borderRadius: 10,
+      borderWidth: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      minWidth: 60,
     }
   })
 

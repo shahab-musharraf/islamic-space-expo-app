@@ -1,8 +1,9 @@
 import { useGetAllMasjidsToVerify } from '@/apis/admin/useGetAllMasjidsToVerify';
 import { useVerifyMasjidMutation } from '@/apis/admin/useVerifyMasjidMutation';
+import ReasonSelection from '@/components/global/ReasonSelection';
 import { MasjidVerificationStatus } from '@/constants/masjid-status';
 import { useNavigation } from '@react-navigation/native';
-import React from 'react';
+import React, { useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -25,6 +26,7 @@ interface MasjidToVerify {
   name: string;
   reason: string;
   status: string; // e.g., "Pending Verification"
+  updateStatus: string;
 }
 
 
@@ -46,8 +48,10 @@ const VerificationCard = ({ item, refetchMasjids }: { item: MasjidToVerify, refe
 
   const navigation: any = useNavigation();
   const verifyMasjidMutation = useVerifyMasjidMutation();
-  const [reason, setReason] = React.useState<string>('');
-  const [isApproving, setIsApproving] = React.useState<boolean>(false);
+  const [reason, setReason] = useState<string>('');
+  const [isApproving, setIsApproving] = useState<boolean>(false);
+  const [reasonModalVisible, setReasonModalVisible] = useState(false);
+  const [selectedMasjidId, setSelectedMasjidId] = useState("")
   
   // Handlers for Admin actions (placeholder functions)
   const handleApprove = (id: string) => {
@@ -61,7 +65,12 @@ const VerificationCard = ({ item, refetchMasjids }: { item: MasjidToVerify, refe
   };
   const handleNeedsCorrection = (id: string) => {
     setIsApproving(false);
-    verifyMasjidMutation.mutate({ masjidId: id, verify: false, reason: 'Does not meet criteria' }
+    setSelectedMasjidId(id);
+    setReasonModalVisible(true)
+  };
+  const handleNeedsCorrectionWithReason = () => {
+    console.log('update for', selectedMasjidId, reason)
+    verifyMasjidMutation.mutate({ masjidId: selectedMasjidId, verify: false, reason }
       ,
       {
         onSuccess: () => {
@@ -70,7 +79,11 @@ const VerificationCard = ({ item, refetchMasjids }: { item: MasjidToVerify, refe
         }
       }
     );
-  };
+
+    
+    setReasonModalVisible(false);
+
+  }
   const handleViewDetails = (masjid: MasjidToVerify) => {
     // Implement navigation to a detailed view here
     const {_id, name, images, address, distance, videos} = masjid;
@@ -82,12 +95,13 @@ const VerificationCard = ({ item, refetchMasjids }: { item: MasjidToVerify, refe
   const handleEditMasjid = (masjid:any) => {
     const {_id, name, images, address, distance, videos} = masjid;
     navigation.navigate('screens/masjid-panel/AddMasjidScreen', 
-      { masjidId: _id, editAccountInfo: false }
+      { masjidId: _id, isSecretary: false }
     );
   }
   
   // Helper to determine status color
   const getStatusColor = (status: string) => {
+    if(status==="REVIEW CORRECTIONS") return colors.SHADOW_COLOR;
     if (status.includes('Pending')) return colors.WARNING;
     if (status.includes('Correction')) return colors.DANGER;
     if (status.includes('Verified')) return colors.PRIMARY;
@@ -103,11 +117,17 @@ const VerificationCard = ({ item, refetchMasjids }: { item: MasjidToVerify, refe
         resizeMode="cover"
       />
 
-      <View style={[cardStyles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
+      <View style={[cardStyles.statusBadge, { backgroundColor: getStatusColor(item.status === MasjidVerificationStatus.PENDING_VERIFICATION && item.reason ?
+            "REVIEW CORRECTIONS" :
+            item.status) }]}>
         <Text style={cardStyles.statusText}>
-            {item.status.toUpperCase()}
+            {
+            item.status === MasjidVerificationStatus.PENDING_VERIFICATION && item.reason ?
+            "REVIEW CORRECTIONS" :
+            item.status.toUpperCase()}
         </Text>
       </View>
+
 
       {/* Details Section */}
       <View style={cardStyles.details}>
@@ -169,6 +189,32 @@ const VerificationCard = ({ item, refetchMasjids }: { item: MasjidToVerify, refe
             </TouchableOpacity>
         </View>
       </View>
+
+      
+      {
+                  item.reason && 
+                  (item.status === MasjidVerificationStatus.PENDING_VERIFICATION) 
+                  && (
+                    <View style={{ marginTop: 4 }}>
+                      {item.reason.split('%').map((r:string, index: number) => (
+                        <Text key={index} style={{ color: 'red', fontSize: 12 }}>
+                          Reason {index+1}: {r.trim()}
+                        </Text>
+                      ))}
+                    </View>
+                  )}
+
+      <ReasonSelection
+        visible={reasonModalVisible}
+        reason={reason || item.reason}
+        setReason={setReason}
+        onConfirm={() => {
+          // submit rejection using 'reason'
+          handleNeedsCorrectionWithReason();
+        }}
+        onCancel={() => setReasonModalVisible(false)}
+        isLoading={verifyMasjidMutation.isPending && !isApproving}
+      />
     </View>
   );
 };
@@ -177,10 +223,10 @@ const VerificationCard = ({ item, refetchMasjids }: { item: MasjidToVerify, refe
 
 const VerifyMasjidsScreen = () => {
   // Use the actual hook, but fall back to mockData for testing if needed
-  const { data, isLoading, refetch, isError } = useGetAllMasjidsToVerify();
+  const { data, isLoading, refetch, isError, isRefetching } = useGetAllMasjidsToVerify();
   
 
-  if(isLoading) {
+  if(isLoading || isRefetching) {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color="#0000ff" />
@@ -223,17 +269,17 @@ export default VerifyMasjidsScreen;
 const cardStyles = StyleSheet.create({
     card: {
         backgroundColor: colors.CARD_BG,
-        borderRadius: 12,
+        // borderRadius: 12,
         marginVertical: 8,
         marginHorizontal: 16,
         padding: 15,
-        overflow: 'hidden',
-        flexDirection: 'row', // Horizontal layout
-        elevation: 6,
-        shadowColor: colors.SHADOW_COLOR,
-        shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 0.1,
-        shadowRadius: 6,
+        // overflow: 'hidden',
+        // flexDirection: 'row', // Horizontal layout
+        // elevation: 6,
+        // shadowColor: colors.SHADOW_COLOR,
+        // shadowOffset: { width: 0, height: 3 },
+        // shadowOpacity: 0.1,
+        // shadowRadius: 6,
     },
     image: {
         width: 100,
@@ -319,11 +365,11 @@ const styles = StyleSheet.create({
     },
 
     viewBtn: {
-    marginTop: 10,
-    borderWidth: 1,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    alignSelf: "flex-start",
-    borderRadius: 6,
-  },
+      marginTop: 10,
+      borderWidth: 1,
+      paddingVertical: 6,
+      paddingHorizontal: 12,
+      alignSelf: "flex-start",
+      borderRadius: 6,
+    },
 });

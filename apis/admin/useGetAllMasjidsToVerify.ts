@@ -15,6 +15,6 @@ export const useGetAllMasjidsToVerify = () => {
       );
       return data;
     },
-    retry: 5
+    retry: 2
   });
 };

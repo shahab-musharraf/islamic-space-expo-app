@@ -29,7 +29,14 @@ interface MasjidCardProps {
   address: string;
   distance: number; // in km
   images: string[];
-  videos: string[]
+  videos: string[];
+
+  // NEW
+  color?: string | null;
+  isUpcoming?: boolean;
+  timeDiff?: string | null;
+  prayerTime?: string | null;
+  selectedPrayer?: string;
 
 }
 
@@ -41,7 +48,11 @@ export const MasjidCard: React.FC<MasjidCardProps> = ({
   address,
   distance,
   images,
-  videos
+  videos,
+  color,
+  isUpcoming,
+  prayerTime,
+  timeDiff
 }) => {
   const navigation :any = useNavigation();
   const { colors } = useTheme() as Theme;
@@ -82,6 +93,14 @@ export const MasjidCard: React.FC<MasjidCardProps> = ({
           source={{ uri: images[0] }}
           style={styles.image}
         />
+        {/* Overlay Banner */}
+        {color && (
+          <View style={[styles.overlayBanner, { backgroundColor: color }]}>
+            <Text style={styles.overlayText}>
+              {isUpcoming ? timeDiff : prayerTime}
+            </Text>
+          </View>
+        )}
         <View style={styles.masjidInfo}>
           <View style={styles.nameContainer}>
             <Text style={[{color: colors.TEXT}]}>{name.substring(0, 15)}</Text>
@@ -116,6 +135,26 @@ const styles = StyleSheet.create({
     height: 100,
     resizeMode: 'cover',
   },
+  imageWrapper: {
+  position: 'relative',
+},
+
+overlayBanner: {
+  position: 'absolute',
+  top: 8,
+  left: 8,
+  paddingHorizontal: 10,
+  paddingVertical: 4,
+  borderRadius: 6,
+  zIndex: 10,
+},
+
+overlayText: {
+  color: '#FFFFFF',
+  fontSize: 12,
+  fontWeight: '700',
+},
+
   nameContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',

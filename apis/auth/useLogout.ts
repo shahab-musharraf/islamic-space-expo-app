@@ -1,3 +1,4 @@
+import { useFavoriteMasjidStore } from "@/stores/useFavoriteMasjidStore";
 import { useUserLocationStore } from "@/stores/userLocationStore";
 import { useUserProfileStore } from "@/stores/userProfileStore";
 import { showMessage } from "@/utils/functions";
@@ -10,6 +11,7 @@ export const useLogoutMutation = () => {
   const navigation :any = useNavigation();
   const { clearProfile } = useUserProfileStore();
   const { clearLocation } = useUserLocationStore();
+  const { reset } = useFavoriteMasjidStore();
   return useMutation({
     mutationFn: async () => {
       const { data } = await authRequest.post(
@@ -23,6 +25,7 @@ export const useLogoutMutation = () => {
       showMessage("Logged Out Successfully!")
       clearLocation();
       clearProfile();
+      reset();
       navigation.reset({ index: 0, routes: [{ name: 'auth/index' }] });
       
     },
@@ -32,6 +35,7 @@ export const useLogoutMutation = () => {
       deleteRefreshToken()
       clearProfile();
       clearLocation();
+      reset();
       navigation.reset({ index: 0, routes: [{ name: 'auth/index' }] });
       alert(error.response.data.message)
     }

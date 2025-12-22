@@ -53,7 +53,7 @@ const VerificationCard = ({ item, refetchMasjids }: { item: MasjidNeedCorrection
   const handleEditMasjid = (masjid:any) => {
     const {_id, name, images, address, distance, videos} = masjid;
     navigation.navigate('screens/masjid-panel/AddMasjidScreen', 
-      { masjidId: _id }
+      { masjidId: _id, isSecretary: false }
     );
   }
   const handleViewDetails = (masjid: MasjidNeedCorrections) => {

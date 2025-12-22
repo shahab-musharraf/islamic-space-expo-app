@@ -1,16 +1,23 @@
+import { useGetAllFavoriteMosque } from '@/apis/favoriteMosque/useGetAllFavoriteMosque';
 import { useGetAllNearbyMasjids } from '@/apis/masjid/useGetAllMasjids';
 import { MasjidCard } from '@/components/custom/MasjidCard';
+import FilterSortModal from '@/components/global/FilterSortModal';
 import Loader from '@/components/Loader';
 import { Theme } from '@/constants/types';
 import { useUserLocation } from '@/hooks/useUserLocation';
+import { useFavoriteMasjidStore } from '@/stores/useFavoriteMasjidStore';
 import { useUserLocationStore } from '@/stores/userLocationStore';
+import { Ionicons } from '@expo/vector-icons';
 import Entypo from '@expo/vector-icons/Entypo';
+import StarFilledIcon from '@expo/vector-icons/FontAwesome';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import { useTheme } from '@react-navigation/native';
 import { Image } from 'expo-image';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Animated, Dimensions, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+// <StarOutlineIcon name="star" size={24} color="black" />
+// <StarFilledIcon name="star" size={24} color="black" />
 
 // This function converts a noisy string into a sequential regex pattern
 const createSequentialRegex = (input:string) => {
@@ -47,6 +54,8 @@ const PAGE = '1';
 const LIMIT = '20';
 const RADIUS = '50';
 
+type PrayerLevel = 'PAST' | 'IMMEDIATE' | 'SOON' | 'LATER' | '';
+
 const Home = () => {
   
   // react hooks
@@ -54,13 +63,38 @@ const Home = () => {
   const [updateLocationLoading, setUpdateLocationLoading] = useState(false);
   const [searchValue, setSearchValue] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+
+  const [filterModalVisible, setFilterModalVisible] = useState(false);
+  const [appliedFilter, setAppliedFilter] = useState<{
+    salah: string;
+    sortBy: 'distance' | 'salah_time';
+    level: PrayerLevel; // optional
+  }>({
+    salah: '',
+    sortBy: 'distance',
+    level: '',
+  });
+
+
   const slideAnim = useRef(new Animated.Value(-MODAL_HEIGHT)).current;      // Set up animated value, starting off-screen (top)
   
   // custom hooks and stores
   const { restoreLocation , clearLocation } = useUserLocationStore();
+  const { hydrated, setFavorite, isFavorite, favorites } = useFavoriteMasjidStore();
   const { location, errorMsg, fetchLocation, handleExitApp, handleOpenSettings, isLoading:locationLoading } = useUserLocation();
   const { colors } = useTheme() as Theme ;
-  const { data, error, isLoading } = useGetAllNearbyMasjids(RADIUS, LIMIT, PAGE, '');   // need to optimize search
+  const { data, error, isLoading } = useGetAllNearbyMasjids(RADIUS, LIMIT, PAGE, '', appliedFilter.salah, appliedFilter.sortBy, appliedFilter.level);   // need to optimize search
+  const { data: favoriteMosque, isLoading: favoriteMosqueLoading, isSuccess: favoriteMosqueSuccess } = useGetAllFavoriteMosque(!hydrated)
+
+  useEffect(() => {
+    if (favoriteMosqueSuccess && favoriteMosque) {
+      setFavorite({
+        favorites: favoriteMosque.favoriteMasjids ?? [],
+        following: favoriteMosque.followingMasjid ?? null,
+      });
+    }
+  }, [favoriteMosqueSuccess, favoriteMosque])
+
 
   const filteredData = useMemo(() => {
     // Create the regex only once per memoization cycle
@@ -146,18 +180,28 @@ const Home = () => {
       </View>
 
       <View style={styles.paddingContainer}>
-        <TextInput 
-          value={searchValue}
-          onChangeText={setSearchValue}
-          placeholder="Search for Masjids"
-          placeholderTextColor={colors.DISABLED_TEXT}
-          style={[styles.input, { backgroundColor: colors.BG_SECONDARY, color: colors.TEXT}]}
-        />
+        <View style={{flexDirection: 'row'}}>
+          <TextInput 
+            value={searchValue}
+            onChangeText={setSearchValue}
+            placeholder="Search for Masjids"
+            placeholderTextColor={colors.DISABLED_TEXT}
+            style={[styles.input, { backgroundColor: colors.BG_SECONDARY, color: colors.TEXT, flex: 1}]}
+          />
+
+          <TouchableOpacity
+            style={styles.filterButton}
+            onPress={() => setFilterModalVisible(true)}
+          >
+            <Ionicons name="filter" size={22} color={colors.TEXT} />
+          </TouchableOpacity>
+        </View>
+
 
 
       
 
-        {isLoading || locationLoading ?
+        {isLoading || locationLoading || favoriteMosqueLoading ?
           <View style={{ alignItems: 'center', justifyContent: 'center', height: '95%' }}>
                 <Loader />
               </View>
@@ -176,10 +220,16 @@ const Home = () => {
             ) : 
             <ScrollView style={styles.masjidListContainer} contentContainerStyle={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 10 }}>  
               {filteredData?.map((masjid : MasjidCardProps) => (
-                  <MasjidCard 
-                    key={masjid._id}
-                    {...masjid}
-                    />
+                  <View key={masjid._id} style={styles.cardWrapper}>
+                    <MasjidCard
+                      {...masjid}
+                      />
+                    {hydrated && isFavorite(masjid._id) && (
+                      <View style={styles.favoriteIcon} pointerEvents="none">
+                          <StarFilledIcon name="star" size={18} color="#FFD700" />
+                      </View>
+                    )}
+                  </View>
             ))}
             </ScrollView>
           }
@@ -269,6 +319,32 @@ const Home = () => {
           </Animated.View>
         </View>
       </Modal>
+      {filterModalVisible && (
+  <FilterSortModal
+    visible={filterModalVisible}
+    onClose={() => setFilterModalVisible(false)}
+    initialData={{
+      salah: appliedFilter.salah,
+      sortBy:
+        appliedFilter.sortBy === 'distance'
+          ? 'Distance'
+          : 'Salah Time',
+      level: appliedFilter.level, // ✅ pass level
+    }}
+    onApply={({ salah, sortBy, level }) => {
+      setAppliedFilter({
+        salah: salah || '',
+        sortBy:
+          sortBy === 'Distance'
+            ? 'distance'
+            : 'salah_time',
+        level : level || '', // ✅ store level (can be undefined)
+      });
+    }}
+  />
+)}
+
+
     </SafeAreaView>
   );
 };
@@ -288,6 +364,29 @@ const styles = StyleSheet.create({
     paddingBlock: 5,
     borderRadius: 8,
     maxWidth:'60%',
+  },
+
+  filterButton: {
+    marginLeft: 8,
+    padding: 10,
+    borderRadius: 8,
+  },
+
+  cardWrapper: {
+    position: 'relative',
+    width: '48%',
+  },
+
+  favoriteIcon: {
+    position: 'absolute',
+    top: 3,
+    right: 16,
+
+    // backgroundColor: 'rgba(0,0,0,0.5)',
+    borderRadius: 16,
+    // padding: 6,
+
+    zIndex: 10,
   },
 
   modalBackdrop: {

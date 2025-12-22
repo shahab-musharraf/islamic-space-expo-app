@@ -13,6 +13,7 @@ import { default as DashboardIcon, default as MaterialIcons } from '@expo/vector
 import { useNavigation, useTheme } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useEffect, useRef, useState } from 'react';
+
 import {
   ActivityIndicator,
   Image,
@@ -191,6 +192,8 @@ const ProfileScreen = () => {
   }
 }, [editingName]);
 
+console.log(editedName, 'name')
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.toggleButton}>
@@ -231,7 +234,7 @@ const ProfileScreen = () => {
               ref={changeNameInputRef}
             />
           ) : (
-            <Text style={{ ...styles.info, color: colors.DISABLED_TEXT }}>{String(editedName ?? profile?.name ?? 'Your Name')}</Text>
+            <Text style={{ ...styles.info, color: colors.DISABLED_TEXT }}>{String(editedName ? editedName : profile?.name ? profile.name : 'Your Name')}</Text>
           )}
 
           {!editingName ?

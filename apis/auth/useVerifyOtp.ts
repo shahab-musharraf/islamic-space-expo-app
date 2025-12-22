@@ -17,6 +17,10 @@ export const useVerifyOtpMutation = () => {
       return data;
     },
     onSuccess: (response) => {
+      if(!response.profile){
+        return;
+      }
+
       setAccessToken(response.accessToken);
       setRefreshToken(response.refreshToken);
       setProfile(response.profile);

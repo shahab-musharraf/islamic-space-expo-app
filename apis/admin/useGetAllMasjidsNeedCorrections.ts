@@ -15,6 +15,6 @@ export const useGetAllMasjidsNeedCorrections = () => {
       );
       return data;
     },
-    retry: 5
+    retry: 2
   });
 };

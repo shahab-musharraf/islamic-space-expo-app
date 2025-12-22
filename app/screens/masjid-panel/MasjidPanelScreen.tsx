@@ -1,10 +1,13 @@
 import { useGetAllSelfAddedMasjids } from "@/apis/masjid/useGetAllSelfAddedMasjids";
+import { useUpdatePrayerTimingsMutation } from "@/apis/masjid/useUpdatePrayerTimingsMutation";
 import MasjidUpdateLabel from "@/components/global/MasjidUpdateLabel";
 import MasjidVerificationLabel from "@/components/global/MasjidVerificationLabel";
+import PrayerInfoModal from "@/components/global/PrayerInfoModal";
 import { MasjidUpdateStatus, MasjidVerificationStatus } from "@/constants/masjid-status";
 import { Theme } from "@/constants/types";
+import { showMessage } from "@/utils/functions";
 import { useNavigation, useTheme } from "@react-navigation/native";
-import React from "react";
+import React, { useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -22,11 +25,16 @@ interface Props {
 const MasjidPanel: React.FC<Props> = () => {
   const navigation: any = useNavigation();
   const { colors } = useTheme() as Theme;
+  const [selectedMasjidPrayerInfo, setSelectedMasjidPrayerInfo] = useState<any>(null);
+  const [selectedMasjid, setSelectedMasjid] = useState<any>(null);
+  const { mutate:updatePrayerInfo, isPending:updatePrayerInfoLoading } = useUpdatePrayerTimingsMutation();
 
-  const { data, isLoading } = useGetAllSelfAddedMasjids();
+  const { data, isLoading, refetch } = useGetAllSelfAddedMasjids();
 
   const handleAddMasjid = () => {
-    navigation.navigate("screens/masjid-panel/AddMasjidScreen");
+    navigation.navigate("screens/masjid-panel/AddMasjidScreen",
+      { isSecretary: true }
+    );
   };
 
   const handleViewMasjid = (masjid:any) => {
@@ -40,8 +48,44 @@ const MasjidPanel: React.FC<Props> = () => {
   const handleEditMasjid = (masjid:any) => {
     const {_id, name, images, address, distance, videos} = masjid;
     navigation.navigate('screens/masjid-panel/AddMasjidScreen', 
-      { masjidId: _id, editAccountInfo: true }
+      { masjidId: _id, isSecretary: true }
     );
+  }
+
+  const handleEditPrayerTiming = () => {
+    if(!selectedMasjid || !selectedMasjidPrayerInfo){
+      return;
+    }
+    const oldPrayerInfo = selectedMasjid.prayerInfo;
+    const updatedRecord :any= {};
+    const keys = Object.keys(selectedMasjidPrayerInfo);
+    if(!keys.length){
+      return;
+    } 
+    for(const key of keys){
+      if(oldPrayerInfo[key] !== selectedMasjidPrayerInfo[key]){
+        updatedRecord[key] = selectedMasjidPrayerInfo[key];
+      }
+    }
+
+    console.log(updatedRecord, 'update this')
+
+    try {
+      updatePrayerInfo({
+        masjidId: selectedMasjid._id,
+        prayerInfo: {prayerInfo:updatedRecord}
+      },
+    {
+      onSuccess : () => {
+        showMessage('Salah Timings Updated Successfully!')
+        refetch()
+      }
+    })
+    } catch (error) {
+      
+    }
+    setSelectedMasjidPrayerInfo(null)
+    setSelectedMasjid(null);
   }
 
   if (isLoading) {
@@ -52,7 +96,7 @@ const MasjidPanel: React.FC<Props> = () => {
     );
   }
 
-  console.log(data, '')
+  // console.log(selectedMasjidPrayerInfo, 'clicked...')
 
   return (
     <View style={styles.container}>
@@ -87,7 +131,18 @@ const MasjidPanel: React.FC<Props> = () => {
             <View style={styles.details}>
             <MasjidVerificationLabel status={item.status} />
             <MasjidUpdateLabel status={item.updateStatus} />
-            {item.reason && <Text style={{ color: 'red', fontSize: 12, marginTop: 4 }}>Reason: {item.reason}</Text>}
+            {
+            item.reason && 
+            (item.status === MasjidVerificationStatus.NEEDS_CORRECTION || item.updateStatus === MasjidUpdateStatus.REJECTED) 
+            && (
+              <View style={{ marginTop: 4 }}>
+                {item.reason.split('%').map((r:string, index: number) => (
+                  <Text key={index} style={{ color: 'red', fontSize: 12 }}>
+                    Reason {index+1}: {r.trim()}
+                  </Text>
+                ))}
+              </View>
+            )}
               
               <Text style={styles.masjidName}>{item.name}</Text>
               <Text style={styles.address}>{item.address}</Text>
@@ -96,6 +151,22 @@ const MasjidPanel: React.FC<Props> = () => {
                   ? `${Math.round(item.distance * 1000)} m away`
                   : `${item.distance.toFixed(1)} km away`}
               </Text>
+
+              {
+                item.status === MasjidVerificationStatus.VERIFIED &&
+                <TouchableOpacity
+                  onPress={() => {
+                    if(!item.prayerInfo) return;
+                    setSelectedMasjidPrayerInfo(item.prayerInfo);
+                    setSelectedMasjid(item);
+                  }}
+                  style={[styles.viewBtn, { borderColor: colors.TEXT }]}
+                >
+                  <Text style={{ color: colors.TEXT, fontWeight: "500" }}>
+                    Edit Prayer Timings
+                  </Text>
+                </TouchableOpacity>
+              }
 
               <View style={styles.btnContainer}>
                 <TouchableOpacity
@@ -124,6 +195,21 @@ const MasjidPanel: React.FC<Props> = () => {
       /> : <View style={styles.center}>
         <Text style={{ color: 'red' }}>No masjids added yet.</Text>
       </View>}
+
+      {selectedMasjidPrayerInfo && 
+        <PrayerInfoModal 
+          prayerInfo={selectedMasjidPrayerInfo}
+          setPrayerInfo={setSelectedMasjidPrayerInfo}
+          visible={selectedMasjidPrayerInfo !== null}
+          onClose={() => {
+            setSelectedMasjid(null)
+            setSelectedMasjidPrayerInfo(null)
+          }}
+          onUpdate={handleEditPrayerTiming}
+          loading={updatePrayerInfoLoading}
+
+        />
+      }
     </View>
   );
 };

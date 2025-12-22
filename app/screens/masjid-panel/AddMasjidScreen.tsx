@@ -150,9 +150,9 @@ const AddMasjidScreen: React.FC = ({params}: any) => {
 
 
   const masjidId = route?.params?.masjidId;
-  const editAccountInfo = route?.params?.editAccountInfo;
+  const isSecretary = route?.params?.isSecretary;
   const isEditMode = !!masjidId;
-  console.log(masjidId, isEditMode, 'received to update');
+  console.log(masjidId, isEditMode, isSecretary, 'received to updates');
   const createMasjidMutation = useCreateMasjidMutation();
 
   const updateMasjidMutation = useUpdateMasjidMutation();
@@ -384,6 +384,8 @@ const AddMasjidScreen: React.FC = ({params}: any) => {
       const oldBudgerReport = budgetReport && budgetReport.name.startsWith('islamic-space-existing-masjid-budgetreport') ? budgetReport : null;
       const newBudgetReport = budgetReport && !budgetReport.name.startsWith('islamic-space-existing-masjid-budgetreport') ? budgetReport : null;
 
+      fd.append('isSecretary', isSecretary)
+
       if(Object.keys(changedBasicInfo).length){
         fd.append('masjidInfo', JSON.stringify(changedBasicInfo));
       }
@@ -447,11 +449,12 @@ const AddMasjidScreen: React.FC = ({params}: any) => {
 
       updateMasjidMutation.mutate({masjidId, formData: fd}, {
         onSuccess: (data) => {
-          showMessage("Request to update masjid sent successfully")
-          if(editAccountInfo){
+          if(isSecretary){
+            showMessage("Success!")
             navigation.replace('screens/masjid-panel/MasjidPanelScreen');
           }
           else {
+            showMessage("Updated Successfully!")
             navigation.replace('screens/admin-panel/AdminPanelScreen');
           }
           
@@ -606,20 +609,20 @@ const AddMasjidScreen: React.FC = ({params}: any) => {
         name: `islamic-space-existing-masjid-qrcode|${fetchedMasjidData.accountInfo.qrCode}`,
         type: 'image',
       }})
-      if(!fetchedMasjidData.isUnderConstruction){
+      // if(!fetchedMasjidData.isUnderConstruction){
         setBudgetInfo(fetchedMasjidData.budgetInfo)
-      }
+      // }
 
-      if(fetchedMasjidData.isUnderConstruction){
-        setUnderConstructionBudgetInfo({...fetchedMasjidData.underConstructionBudgetInfo, budgetReport: {
+      // if(fetchedMasjidData.isUnderConstruction){
+      setUnderConstructionBudgetInfo({...fetchedMasjidData.underConstructionBudgetInfo, budgetReport: {
           uri: fetchedMasjidData.underConstructionBudgetInfo.budgetReport,
           name: `islamic-space-existing-masjid-budgetreport|${fetchedMasjidData.underConstructionBudgetInfo.budgetReport}`,
           type: 'application/pdf',
         },
-      expectedEndDate: new Date(fetchedMasjidData.underConstructionBudgetInfo.expectedEndDate),
-      startDate: new Date(fetchedMasjidData.underConstructionBudgetInfo.startDate),
+        expectedEndDate: new Date(fetchedMasjidData.underConstructionBudgetInfo.expectedEndDate),
+        startDate: new Date(fetchedMasjidData.underConstructionBudgetInfo.startDate),
       })
-      }
+      // }
     }
 
   }, [isEditMode, fetchedMasjidData, fetchingMasjidDataSuccess, fechingMasjidData]);
@@ -637,38 +640,7 @@ const AddMasjidScreen: React.FC = ({params}: any) => {
                         setUnderConstructionBudgetInfo ={setUnderConstructionBudgetInfo}
         />}
         {step === 3 && !basicInfo.isUnderConstruction && <PrayerInfoScreen prayerInfo={prayerInfo} setPrayerInfo={setPrayerInfo} />}
-        {step === 4 ? isEditMode && editAccountInfo ? <PaymentInfoScreen paymentInfo={paymentInfo} setPaymentInfo={setPaymentInfo} />
-        : <>
-  <View
-    style={{
-      backgroundColor: '#fff7e6',
-      borderLeftWidth: 4,
-      borderLeftColor: '#ffa500',
-      padding: 12,
-      borderRadius: 6,
-      marginVertical: 10,
-      flexDirection: 'row',
-      alignItems: 'flex-start',
-      gap: 10,
-    }}
-  >
-    <Text style={{ fontSize: 20 }}>⚠️</Text>
-
-    <View style={{ flex: 1 }}>
-      <Text style={{ fontWeight: 'bold', color: '#b36b00', marginBottom: 4 }}>
-        You are not allowed to edit masjid's account info.
-      </Text>
-
-      <Text style={{ color: '#6a5f50' }}>
-        You can verify the account info and if it's incorrect, mark the status as
-        <Text style={{ fontWeight: 'bold' }}> Needs Correction </Text>
-        with an appropriate reason.
-      </Text>
-    </View>
-  </View>
-</>
- : <></>  
-      }
+        {step === 4  && <PaymentInfoScreen paymentInfo={paymentInfo} setPaymentInfo={setPaymentInfo} editable={isSecretary} />}
 
         <View style={{ flexDirection: 'row-reverse', gap: 8, height: 80, alignItems:'center' }}>
           
