@@ -1,3 +1,4 @@
+import { useGetAllFavoriteDetails } from '@/apis/favoriteMosque/useGetAllFavoriteDetails';
 import { useGetAllFavoriteMosque } from '@/apis/favoriteMosque/useGetAllFavoriteMosque';
 import { useGetAllNearbyMasjids } from '@/apis/masjid/useGetAllMasjids';
 import { MasjidCard } from '@/components/custom/MasjidCard';
@@ -62,6 +63,8 @@ const Home = () => {
   const [updateLocationLoading, setUpdateLocationLoading] = useState(false);
   const [searchValue, setSearchValue] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const {data: favoriteMasjids, isLoading: favoriteMasjidLoading, refetch: favoriteMasjidsRefetch, isError} = useGetAllFavoriteDetails()
+
 
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [appliedFilter, setAppliedFilter] = useState<{
@@ -153,6 +156,8 @@ const Home = () => {
   };
 
 
+  console.log(favoriteMasjids, favoriteMasjidLoading ,' *****************');
+
 
 
   return (
@@ -196,12 +201,43 @@ const Home = () => {
           </TouchableOpacity>
         </View>
 
-        <Text>Favorites</Text>
+        <Text style={styles.section}>Favorites</Text>
+        {favoriteMasjidLoading || locationLoading || favoriteMosqueLoading ?
+          <View style={{ alignItems: 'center', justifyContent: 'center', height: '25%' }}>
+                <Loader />
+              </View>
+          :
+          isError ? (
+            <SafeAreaView style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+              <Text style={{ color: colors.text }}>Some Error Occured</Text>
+            </SafeAreaView>
+          ): 
+          <View>
+          {
+            !favoriteMasjids || (favoriteMasjids && favoriteMasjids?.length === 0) ? (
+              <View style={{ alignItems: 'center', justifyContent: 'center', height: '95%' }}>
+                <Text style={{ color: 'orange', fontSize: 16 }}>No Nearby Masjids Found</Text>
+              </View>
+            ) : 
+            <ScrollView style={styles.masjidListContainer} contentContainerStyle={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 10 }}>  
+              {favoriteMasjids?.map((masjid : MasjidCardProps) => (
+                  <View key={masjid._id} style={styles.cardWrapper}>
+                    <MasjidCard
+                      {...masjid}
+                      />
+                  </View>
+            ))}
+            </ScrollView>
+          }
+        </View>}
+
 
 
 
       
 
+
+        <Text style={styles.section}>Nearby Masjids</Text>
         {isLoading || locationLoading || favoriteMosqueLoading ?
           <View style={{ alignItems: 'center', justifyContent: 'center', height: '95%' }}>
                 <Loader />
@@ -371,6 +407,10 @@ const styles = StyleSheet.create({
   cardWrapper: {
     position: 'relative',
     width: '48%',
+  },
+  section: {
+    fontSize: 16,
+    color: 'green'
   },
 
 
