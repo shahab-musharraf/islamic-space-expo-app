@@ -322,7 +322,7 @@ const MasjidDetails = () => {
               style={[styles.tab, activeTab === 1 && [styles.activeTab, { borderBottomColor: colors.BUTTON_BG }]]}
               onPress={() => setActiveTab(1)}
             >
-              <Text style={[styles.tabText, { color: colors.TEXT }, activeTab === 1 && [styles.activeTabText, { color: colors.TEXT }]]}>
+              <Text style={[styles.tabText, { color: colors.TEXT}, activeTab === 1 && [styles.activeTabText, { color: colors.TEXT }]]}>
                 Prayer Timings
               </Text>
             </TouchableOpacity>

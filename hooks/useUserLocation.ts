@@ -163,6 +163,7 @@ export const useUserLocation = (): UseUserLocationResult => {
       await restoreLocation();
 
       if (!location) {
+        console.log('Location not found')
         await fetchLocation();
       } else {
         setIsLoading(false);

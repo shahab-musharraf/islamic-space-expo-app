@@ -2,6 +2,7 @@ import { Theme } from '@/constants/types';
 import { useFavoriteMasjidStore } from '@/stores/useFavoriteMasjidStore';
 import { getDisplayDistance } from '@/utils/getDisplayDistance';
 import StarFilledIcon from '@expo/vector-icons/FontAwesome';
+import FollowingIcons from '@expo/vector-icons/Ionicons';
 import { useNavigation, useTheme } from '@react-navigation/native';
 import { Image } from 'expo-image';
 import React from 'react';
@@ -96,6 +97,9 @@ export const MasjidCard: React.FC<MasjidCardProps> = ({
 
           {hydrated && isFavorite(_id) && (
             <View style={styles.favoriteIcon} pointerEvents="none">
+                {
+                  isFollowing(_id) && <FollowingIcons name="checkmark-done-circle-sharp" size={24} color="white" />
+                }
                 <StarFilledIcon name="star" size={18} color="#FFD700" />
             </View>
           )}
@@ -233,6 +237,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 6,
     right: 6,
+    flexDirection:'row',
+    alignItems:'center',
+    gap:5,
 
     // backgroundColor: 'rgba(0,0,0,0.5)',
     borderRadius: 16,

@@ -196,6 +196,8 @@ const Home = () => {
           </TouchableOpacity>
         </View>
 
+        <Text>Favorites</Text>
+
 
 
       

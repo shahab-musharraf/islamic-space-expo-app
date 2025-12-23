@@ -4,12 +4,11 @@ import { roles } from '@/constants/roles';
 import { useAppTheme } from '@/constants/ThemeContext';
 import { Theme } from '@/constants/types';
 import { showMessage } from '@/utils/functions';
-import Entypo from '@expo/vector-icons/Entypo';
 import Feather from '@expo/vector-icons/Feather';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
-import MasjidIcon, { default as FontAwesome6, default as FontAwesome7 } from '@expo/vector-icons/FontAwesome6';
-import { default as DashboardIcon, default as MaterialIcons } from '@expo/vector-icons/MaterialIcons';
+import MasjidIcon, { default as FontAwesome7 } from '@expo/vector-icons/FontAwesome6';
+import { default as DashboardIcon } from '@expo/vector-icons/MaterialIcons';
 import { useNavigation, useTheme } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useEffect, useRef, useState } from 'react';
@@ -191,7 +190,9 @@ const ProfileScreen = () => {
   }
 }, [editingName]);
 
-console.log(editedName, 'name')
+ const handleAddMasjid = () => {
+  
+ }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -273,37 +274,47 @@ console.log(editedName, 'name')
       {/* Option List */}
       <View style={styles.optionContainer}>
 
-        <TouchableOpacity style={styles.optionRow} onPress={handleMyDonations}>
+        {/* <TouchableOpacity style={styles.optionRow} onPress={handleMyDonations}>
           <View style={styles.iconTextContainer}>
             <MaterialIcons name="attach-money" size={24} color={colors.ICON} style={styles.icon} />
             <Text style={{ ...styles.optionText, color: colors.TEXT }}>My Donations</Text>
           </View>
           <Feather name="chevron-right" size={24} color={colors.DISABLED_TEXT} />
-        </TouchableOpacity>
+        </TouchableOpacity> */}
 
-        <TouchableOpacity style={styles.optionRow} onPress={handleMyOrders}>
+        {/* <TouchableOpacity style={styles.optionRow} onPress={handleMyOrders}>
           <View style={styles.iconTextContainer}>
             <FontAwesome6 name="rectangle-list" size={20} color={colors.ICON} style={styles.icon} />
             <Text style={{ ...styles.optionText, color: colors.TEXT }}>My Orders</Text>
           </View>
           <Feather name="chevron-right" size={24} color={colors.DISABLED_TEXT} />
-        </TouchableOpacity>
+        </TouchableOpacity> */}
 
-        <TouchableOpacity style={styles.optionRow} onPress={handleMyAddresses}>
+        {/* <TouchableOpacity style={styles.optionRow} onPress={handleMyAddresses}>
           <View style={styles.iconTextContainer}>
             <Entypo name="location" size={20} color={colors.ICON} style={styles.icon} />
             <Text style={{ ...styles.optionText, color: colors.TEXT }}>My Addresses</Text>
           </View>
           <Feather name="chevron-right" size={24} color={colors.DISABLED_TEXT} />
-        </TouchableOpacity>
+        </TouchableOpacity> */}
 
         <TouchableOpacity style={styles.optionRow} onPress={handleMyWishlists}>
           <View style={styles.iconTextContainer}>
             <FontAwesome name="heart" size={20} color={colors.ICON} style={styles.icon} />
-            <Text style={{ ...styles.optionText, color: colors.TEXT }}>My Wishlists</Text>
+            <Text style={{ ...styles.optionText, color: colors.TEXT }}>My Favorites</Text>
           </View>
           <Feather name="chevron-right" size={24} color={colors.DISABLED_TEXT} />
         </TouchableOpacity>
+
+        {profile && String(profile.role || '').split(',').includes(roles.MASJID_SECRETARY) === false ? (
+          <TouchableOpacity style={styles.optionRow} onPress={handleAddMasjid}>
+            <View style={styles.iconTextContainer}>
+              <MasjidIcon name="mosque" size={20} color={colors.ICON} style={styles.icon} />
+              <Text style={{ ...styles.optionText, color: colors.TEXT }}>Add a Masjid</Text>
+            </View>
+            <Feather name="chevron-right" size={24} color={colors.DISABLED_TEXT} />
+          </TouchableOpacity>
+        ) : null}
 
         {profile && String(profile.role || '').split(',').includes(roles.MASJID_SECRETARY) ? (
           <TouchableOpacity style={styles.optionRow} onPress={handleMasjidPanelNavigation}>
