@@ -1,4 +1,3 @@
-import { useGetAllFavoriteDetails } from '@/apis/favoriteMosque/useGetAllFavoriteDetails';
 import { useGetAllFavoriteMosque } from '@/apis/favoriteMosque/useGetAllFavoriteMosque';
 import { useGetAllNearbyMasjids } from '@/apis/masjid/useGetAllMasjids';
 import { MasjidCard } from '@/components/custom/MasjidCard';
@@ -16,8 +15,6 @@ import { Image } from 'expo-image';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Animated, Dimensions, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-// <StarOutlineIcon name="star" size={24} color="black" />
-// <StarFilledIcon name="star" size={24} color="black" />
 
 // This function converts a noisy string into a sequential regex pattern
 const createSequentialRegex = (input:string) => {
@@ -63,7 +60,6 @@ const Home = () => {
   const [updateLocationLoading, setUpdateLocationLoading] = useState(false);
   const [searchValue, setSearchValue] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const {data: favoriteMasjids, isLoading: favoriteMasjidLoading, refetch: favoriteMasjidsRefetch, isError} = useGetAllFavoriteDetails()
 
 
   const [filterModalVisible, setFilterModalVisible] = useState(false);
@@ -156,12 +152,14 @@ const Home = () => {
   };
 
 
-  console.log(favoriteMasjids, favoriteMasjidLoading ,' *****************');
-
-
-
   return (
     <SafeAreaView style={styles.container}>
+      <ScrollView 
+        style={styles.scrollContainer} 
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
 
       <View style={styles.logoContainer}>
         <Image
@@ -201,35 +199,7 @@ const Home = () => {
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.section}>Favorites</Text>
-        {favoriteMasjidLoading || locationLoading || favoriteMosqueLoading ?
-          <View style={{ alignItems: 'center', justifyContent: 'center', height: '25%' }}>
-                <Loader />
-              </View>
-          :
-          isError ? (
-            <SafeAreaView style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-              <Text style={{ color: colors.text }}>Some Error Occured</Text>
-            </SafeAreaView>
-          ): 
-          <View>
-          {
-            !favoriteMasjids || (favoriteMasjids && favoriteMasjids?.length === 0) ? (
-              <View style={{ alignItems: 'center', justifyContent: 'center', height: '95%' }}>
-                <Text style={{ color: 'orange', fontSize: 16 }}>No Nearby Masjids Found</Text>
-              </View>
-            ) : 
-            <ScrollView style={styles.masjidListContainer} contentContainerStyle={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 10 }}>  
-              {favoriteMasjids?.map((masjid : MasjidCardProps) => (
-                  <View key={masjid._id} style={styles.cardWrapper}>
-                    <MasjidCard
-                      {...masjid}
-                      />
-                  </View>
-            ))}
-            </ScrollView>
-          }
-        </View>}
+       
 
 
 
@@ -237,7 +207,24 @@ const Home = () => {
       
 
 
-        <Text style={styles.section}>Nearby Masjids</Text>
+        <View>
+          <Text style={[styles.section, {color: colors.text}]}>Nearby Masjids</Text>
+          {appliedFilter.salah ? <Text style={[styles.filterMessage, {color: colors.text}]}>Showing results for {appliedFilter.salah} 
+
+          {appliedFilter.level ?  
+            appliedFilter.level === "PAST" ? " whose time is passed" : 
+            appliedFilter.level === 'IMMEDIATE' ? " whose time is within 5 minutes" :
+            appliedFilter.level === 'SOON' ? " whose time in between 5 to 20 minutes" :
+            appliedFilter.level === 'LATER' ? " whose time is after 20 minutes" : 
+          ""
+          : ""}
+
+          </Text> : ""}
+          {
+            appliedFilter.sortBy === "salah_time" ? <Text style={[styles.filterMessage, {color: colors.text}]}>Sorted by Salah Time.</Text> : ""
+          }
+
+        </View>
         {isLoading || locationLoading || favoriteMosqueLoading ?
           <View style={{ alignItems: 'center', justifyContent: 'center', height: '95%' }}>
                 <Loader />
@@ -255,19 +242,20 @@ const Home = () => {
                 <Text style={{ color: 'orange', fontSize: 16 }}>No Nearby Masjids Found</Text>
               </View>
             ) : 
-            <ScrollView style={styles.masjidListContainer} contentContainerStyle={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 10 }}>  
-              {filteredData?.map((masjid : MasjidCardProps) => (
-                  <View key={masjid._id} style={styles.cardWrapper}>
-                    <MasjidCard
-                      {...masjid}
-                      />
-                  </View>
-            ))}
-            </ScrollView>
+            <View style={styles.masjidGrid}>
+              {filteredData.map((masjid: MasjidCardProps) => (
+                <View key={masjid._id} style={styles.cardWrapper}>
+                  <MasjidCard {...masjid} />
+                </View>
+              ))}
+            </View>
           }
         </View>}
+        
+         </View>
 
-      </View>
+      </ScrollView>
+      
 
 
       {/* ❌ Modal for location errors */}
@@ -383,6 +371,8 @@ const Home = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  scrollContainer: { flex: 1 },
+  scrollContent: { flexGrow: 1 },
   logoContainer: {paddingRight: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', overflowX:'hidden'},
   paddingContainer: {
     padding: 20
@@ -409,8 +399,15 @@ const styles = StyleSheet.create({
     width: '48%',
   },
   section: {
-    fontSize: 16,
-    color: 'green'
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    marginTop: 20
+  },
+  filterMessage: {
+    fontSize: 14,
+    marginBottom: 10,
+    fontStyle: 'italic'
   },
 
 
@@ -498,6 +495,13 @@ const styles = StyleSheet.create({
 
   input: { paddingHorizontal: 20, paddingVertical: 12, borderRadius: 8, fontSize: 16  },
   masjidListContainer: {paddingVertical: 30, },
+  masjidGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    gap: 10,
+    paddingBottom: 20
+  },
 
 });
 
