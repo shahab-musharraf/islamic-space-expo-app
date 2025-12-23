@@ -59,8 +59,8 @@ const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 // const MODAL_HEIGHT = SCREEN_HEIGHT / 4;
 const MODAL_HEIGHT = SCREEN_HEIGHT ? SCREEN_HEIGHT / 3 : 200;
 const PAGE = "1";
-const LIMIT = "20";
-const RADIUS = "50";
+const LIMIT = "50";
+const RADIUS = "5";
 
 type PrayerLevel = "PAST" | "IMMEDIATE" | "SOON" | "LATER" | "";
 
@@ -161,6 +161,16 @@ const Home = () => {
       }).start();
     }
   }, [isModalVisible, slideAnim]);
+
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      setSearchQuery(searchValue);
+    }, 500);
+    return () =>{
+      clearTimeout(timeout)
+    }
+  }, [searchValue, searchQuery, setSearchValue, setSearchQuery])
 
   // functions
 
@@ -284,18 +294,21 @@ const Home = () => {
           )}
         </View>
         {isLoading || locationLoading || favoriteMosqueLoading ? (
-          <View style={{ alignItems: "center", justifyContent: "center" }}>
+          <View style={[
+              styles.container,
+              { justifyContent: "center", alignItems: "center" },
+            ]}>
             <Loader />
           </View>
         ) : error ? (
-          <SafeAreaView
+          <View
             style={[
               styles.container,
               { justifyContent: "center", alignItems: "center" },
             ]}
           >
             <Text style={{ color: colors.text }}>Some Error Occured</Text>
-          </SafeAreaView>
+          </View>
         ) : (
           <View style={{ flex: 1 }}>
             <ScrollView
@@ -311,16 +324,6 @@ const Home = () => {
                 </View>
               ) : (
                 <View style={styles.masjidGrid}>
-                  {filteredData.map((masjid: MasjidCardProps) => (
-                    <View key={masjid._id} style={styles.cardWrapper}>
-                      <MasjidCard {...masjid} />
-                    </View>
-                  ))}
-                  {filteredData.map((masjid: MasjidCardProps) => (
-                    <View key={masjid._id} style={styles.cardWrapper}>
-                      <MasjidCard {...masjid} />
-                    </View>
-                  ))}
                   {filteredData.map((masjid: MasjidCardProps) => (
                     <View key={masjid._id} style={styles.cardWrapper}>
                       <MasjidCard {...masjid} />

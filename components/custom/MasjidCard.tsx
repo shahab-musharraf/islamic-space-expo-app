@@ -239,7 +239,7 @@ const styles = StyleSheet.create({
     right: 6,
     flexDirection:'row',
     alignItems:'center',
-    gap:5,
+    gap:3,
 
     // backgroundColor: 'rgba(0,0,0,0.5)',
     borderRadius: 16,
