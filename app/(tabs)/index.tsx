@@ -208,8 +208,13 @@ const Home = () => {
 
 
         <View>
-          <Text style={[styles.section, {color: colors.text}]}>Nearby Masjids</Text>
-          {appliedFilter.salah ? <Text style={[styles.filterMessage, {color: colors.text}]}>Showing results for {appliedFilter.salah} 
+          <View style={styles.nearbySectionLabel}>
+            <Text style={[styles.section, {color: colors.text}]}>Nearby Masjids</Text>
+            {(appliedFilter.salah || appliedFilter.level || appliedFilter.sortBy==="salah_time") && <TouchableOpacity onPress={() => setAppliedFilter({...appliedFilter, salah:'', level:'',sortBy:'distance'})}>
+              <Text style={[{color: 'brown', fontSize:12}]}>Clear Filter</Text>
+            </TouchableOpacity>}
+          </View>
+          {appliedFilter.salah ? <Text style={[styles.filterMessage, {color: colors.text}]}>Showing results for <Text style={{color:'green'}}>{appliedFilter.salah}</Text> 
 
           {appliedFilter.level ?  
             appliedFilter.level === "PAST" ? " whose time is passed" : 
@@ -243,6 +248,21 @@ const Home = () => {
               </View>
             ) : 
             <View style={styles.masjidGrid}>
+              {filteredData.map((masjid: MasjidCardProps) => (
+                <View key={masjid._id} style={styles.cardWrapper}>
+                  <MasjidCard {...masjid} />
+                </View>
+              ))}
+              {filteredData.map((masjid: MasjidCardProps) => (
+                <View key={masjid._id} style={styles.cardWrapper}>
+                  <MasjidCard {...masjid} />
+                </View>
+              ))}
+              {filteredData.map((masjid: MasjidCardProps) => (
+                <View key={masjid._id} style={styles.cardWrapper}>
+                  <MasjidCard {...masjid} />
+                </View>
+              ))}
               {filteredData.map((masjid: MasjidCardProps) => (
                 <View key={masjid._id} style={styles.cardWrapper}>
                   <MasjidCard {...masjid} />
@@ -401,8 +421,6 @@ const styles = StyleSheet.create({
   section: {
     fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: 10,
-    marginTop: 20
   },
   filterMessage: {
     fontSize: 14,
@@ -417,6 +435,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
+  },
+  nearbySectionLabel: {
+    flexDirection:'row',
+    justifyContent:'space-between',
+    alignItems:'center',
+    paddingTop: 20,
+    paddingBottom: 10
   },
   modalContainer: {
     backgroundColor: '#fff',
