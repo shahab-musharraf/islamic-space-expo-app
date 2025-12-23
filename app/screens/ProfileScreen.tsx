@@ -17,7 +17,6 @@ import {
   ActivityIndicator,
   Image,
   StyleSheet,
-  Switch,
   Text,
   TextInput,
   TouchableOpacity,
@@ -191,19 +190,19 @@ const ProfileScreen = () => {
 }, [editingName]);
 
  const handleAddMasjid = () => {
-  
+
  }
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.toggleButton}>
+      {/* <View style={styles.toggleButton}>
         <Switch
           trackColor={{ false: '#767577', true: '#81b0ff' }}
           thumbColor={theme === 'dark' ? '#f5dd4b' : '#f4f3f4'}
           onValueChange={toggleTheme}
           value={theme === 'dark'}
         />
-      </View>
+      </View> */}
 
       {/* Profile Card */}
       <View style={styles.profileCard}>

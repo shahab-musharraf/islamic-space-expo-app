@@ -126,7 +126,7 @@ export const MasjidCard: React.FC<MasjidCardProps> = ({
             </Text>
 
             {distance !== null && distance !== undefined && (
-              <Text style={[styles.distanceText, { color: colors.TINT }]}>
+              <Text style={[styles.distanceText, { color: 'green' }]}>
                 {getDisplayDistance(distance)}
               </Text>
             )}
@@ -141,7 +141,7 @@ export const MasjidCard: React.FC<MasjidCardProps> = ({
 
           {/* CTA */}
           <TouchableOpacity
-            style={[styles.viewButton, { backgroundColor: colors.BUTTON_BG }]}
+            style={[styles.viewButton, { backgroundColor: 'green' }]}
             onPress={handleViewPress}
           >
             <Text
