@@ -1,5 +1,7 @@
 import { useGetAllFavoriteMosque } from "@/apis/favoriteMosque/useGetAllFavoriteMosque";
 import { useGetAllNearbyMasjids } from "@/apis/masjid/useGetAllMasjids";
+import { useGetBudgetNeededMasjids } from "@/apis/masjid/useGetBudgetNeededMasjids";
+import { BudgetNeededCard } from "@/components/custom/BudgetNeededCard";
 import { MasjidCard } from "@/components/custom/MasjidCard";
 import FilterSortModal from "@/components/global/FilterSortModal";
 import Loader from "@/components/Loader";
@@ -52,6 +54,19 @@ interface MasjidCardProps {
   distance: number; // in km
   images: string[];
   videos: string[];
+}
+
+interface BudgetNeededMasjidProps {
+  _id: string;
+  name: string;
+  address: string;
+  city: string;
+  state: string;
+  collectedAmount: number;
+  images: string[];
+  isUnderConstruction: boolean;
+  remainingAmount: number;
+  totalRequired: number;
 }
 
 // Get screen height and define modal height (1/4 of screen)
@@ -111,6 +126,14 @@ const Home = () => {
     isLoading: favoriteMosqueLoading,
     isSuccess: favoriteMosqueSuccess,
   } = useGetAllFavoriteMosque(!hydrated);
+
+  const {
+    data: budgetNeededMasjids,
+    isLoading: budgetNeededLoading,
+    error: budgetNeededError,
+  } = useGetBudgetNeededMasjids("10");
+
+  console.log(budgetNeededMasjids, '&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&');
 
   useEffect(() => {
     if (favoriteMosqueSuccess && favoriteMosque) {
@@ -241,6 +264,33 @@ const Home = () => {
             <Ionicons name="filter" size={22} color={colors.TEXT} />
           </TouchableOpacity>
         </View>
+
+        {/* Budget Needed Masjids Section */}
+        {budgetNeededMasjids && budgetNeededMasjids.length > 0 && (
+          <View style={styles.budgetSection}>
+            <View style={styles.budgetSectionHeader}>
+              <Text style={[styles.budgetSectionTitle, { color: colors.text }]}>
+                🕌 Masjids Needing Support
+              </Text>
+              <Text style={[styles.budgetSectionSubtitle, { color: colors.text + '80' }]}>
+                Help complete their construction and maintenance
+              </Text>
+            </View>
+
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.budgetCardsContainer}
+            >
+              {budgetNeededMasjids.map((masjid: BudgetNeededMasjidProps) => (
+                <BudgetNeededCard
+                  key={masjid._id}
+                  {...masjid}
+                />
+              ))}
+            </ScrollView>
+          </View>
+        )}
 
         <View>
           <View style={styles.nearbySectionLabel}>
@@ -524,6 +574,23 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 10,
   },
+  budgetSection: {
+    marginBottom: 10,
+  },
+  budgetSectionHeader: {
+    marginBottom: 16,
+  },
+  budgetSectionTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 4,
+  },
+  budgetSectionSubtitle: {
+    fontSize: 14,
+  },
+  budgetCardsContainer: {
+    paddingRight: 20,
+  },
   modalContainer: {
     backgroundColor: "#fff",
     borderRadius: 10,
@@ -624,6 +691,25 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     gap: 10,
     paddingBottom: 20,
+  },
+  budgetSection: {
+    marginBottom: 12,
+  },
+  budgetSectionHeader: {
+    marginBottom: 6,
+    paddingHorizontal: 4,
+  },
+  budgetSectionTitle: {
+    fontSize: 14,
+    fontWeight: "bold",
+    marginBottom: 1,
+  },
+  budgetSectionSubtitle: {
+    fontSize: 12,
+  },
+  budgetCardsContainer: {
+    paddingHorizontal: 2,
+    gap: 4,
   },
 });
 
