@@ -97,6 +97,9 @@ const Home = () => {
     level: "",
   });
 
+  const [selectedCity, setSelectedCity] = useState("India");
+  const [cityDropdownVisible, setCityDropdownVisible] = useState(false);
+
   const slideAnim = useRef(new Animated.Value(-MODAL_HEIGHT)).current; // Set up animated value, starting off-screen (top)
 
   // custom hooks and stores
@@ -131,7 +134,7 @@ const Home = () => {
     data: budgetNeededMasjids,
     isLoading: budgetNeededLoading,
     error: budgetNeededError,
-  } = useGetBudgetNeededMasjids("10");
+  } = useGetBudgetNeededMasjids("10", selectedCity);
 
   console.log(budgetNeededMasjids, '&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&');
 
@@ -143,6 +146,16 @@ const Home = () => {
       });
     }
   }, [favoriteMosqueSuccess, favoriteMosque]);
+
+  // Close dropdown when clicking outside or after timeout
+  useEffect(() => {
+    if (cityDropdownVisible) {
+      const timer = setTimeout(() => {
+        setCityDropdownVisible(false);
+      }, 5000); // Auto close after 5 seconds
+      return () => clearTimeout(timer);
+    }
+  }, [cityDropdownVisible]);
 
   const filteredData = useMemo(() => {
     // Create the regex only once per memoization cycle
@@ -265,107 +278,147 @@ const Home = () => {
           </TouchableOpacity>
         </View>
 
-        {/* Budget Needed Masjids Section */}
-        {budgetNeededMasjids && budgetNeededMasjids.length > 0 && (
-          <View style={styles.budgetSection}>
-            <View style={styles.budgetSectionHeader}>
-              <Text style={[styles.budgetSectionTitle, { color: colors.text }]}>
-                🕌 Masjids Needing Support
-              </Text>
-              <Text style={[styles.budgetSectionSubtitle, { color: colors.text + '80' }]}>
-                Help complete their construction and maintenance
-              </Text>
-            </View>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={styles.scrollContent}
+        >
+          {/* Budget Needed Masjids Section */}
+          {budgetNeededMasjids && budgetNeededMasjids.length > 0 && (
+            <View style={styles.budgetSection}>
+              <View style={styles.budgetSectionHeader}>
+                <View style={styles.budgetSectionTitleRow}>
+                  <Text style={[styles.budgetSectionTitle, { color: colors.text }]}>
+                    🕌 High Donation Needed
+                  </Text>
+                  <View style={styles.cityDropdownContainer}>
+                    <TouchableOpacity
+                      style={[styles.cityDropdown, { borderColor: colors.text + '40' }]}
+                      onPress={() => setCityDropdownVisible(!cityDropdownVisible)}
+                    >
+                      <Text style={[styles.cityDropdownText, { color: colors.text }]}>
+                        {selectedCity.length > 10 ? selectedCity.substring(0, 7) + '...' : selectedCity}
+                      </Text>
+                      <View style={styles.dropdownArrow}>
+                        <Ionicons
+                          name={cityDropdownVisible ? "chevron-up" : "chevron-down"}
+                          size={16}
+                          color={colors.text}
+                        />
+                      </View>
+                    </TouchableOpacity>
+                    {cityDropdownVisible && (
+                      <View style={[styles.cityDropdownMenu, { backgroundColor: colors.CARD, borderColor: colors.text + '20' }]}>
+                        {["India", "Hyderabad"].map((city) => (
+                          <TouchableOpacity
+                            key={city}
+                            style={styles.cityDropdownItem}
+                            onPress={() => {
+                              setSelectedCity(city);
+                              setCityDropdownVisible(false);
+                            }}
+                          >
+                            <Text style={[styles.cityDropdownItemText, { color: colors.text }]}>
+                              {city}
+                            </Text>
+                            {selectedCity === city && (
+                              <Ionicons name="checkmark" size={16} color={colors.text} />
+                            )}
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    )}
+                  </View>
+                </View>
+                {/* <Text style={[styles.budgetSectionSubtitle, { color: colors.text + '80' }]}>
+                  Help complete their maintenance or construction
+                </Text> */}
+              </View>
 
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.budgetCardsContainer}
-            >
-              {budgetNeededMasjids.map((masjid: BudgetNeededMasjidProps) => (
-                <BudgetNeededCard
-                  key={masjid._id}
-                  {...masjid}
-                />
-              ))}
-            </ScrollView>
-          </View>
-        )}
-
-        <View>
-          <View style={styles.nearbySectionLabel}>
-            <Text style={[styles.section, { color: colors.text }]}>
-              Nearby Masjids
-            </Text>
-            {(appliedFilter.salah ||
-              appliedFilter.level ||
-              appliedFilter.sortBy === "salah_time") && (
-              <TouchableOpacity
-                onPress={() =>
-                  setAppliedFilter({
-                    ...appliedFilter,
-                    salah: "",
-                    level: "",
-                    sortBy: "distance",
-                  })
-                }
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.budgetCardsContainer}
               >
-                <Text style={[{ color: "brown", fontSize: 12 }]}>
-                  Clear Filter
-                </Text>
-              </TouchableOpacity>
+                {budgetNeededMasjids.map((masjid: BudgetNeededMasjidProps) => (
+                  <BudgetNeededCard
+                    key={masjid._id}
+                    {...masjid}
+                  />
+                ))}
+              </ScrollView>
+            </View>
+          )}
+
+          <View>
+            <View style={styles.nearbySectionLabel}>
+              <Text style={[styles.section, { color: colors.text }]}>
+                Nearby Masjids
+              </Text>
+              {(appliedFilter.salah ||
+                appliedFilter.level ||
+                appliedFilter.sortBy === "salah_time") && (
+                <TouchableOpacity
+                  onPress={() =>
+                    setAppliedFilter({
+                      ...appliedFilter,
+                      salah: "",
+                      level: "",
+                      sortBy: "distance",
+                    })
+                  }
+                >
+                  <Text style={[{ color: "brown", fontSize: 12 }]}>
+                    Clear Filter
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+            {appliedFilter.salah ? (
+              <Text style={[styles.filterMessage, { color: colors.text }]}>
+                Showing results for{" "}
+                <Text style={{ color: "green" }}>{appliedFilter.salah}</Text>
+                {appliedFilter.level
+                  ? appliedFilter.level === "PAST"
+                    ? " whose time is passed"
+                    : appliedFilter.level === "IMMEDIATE"
+                    ? " whose time is within 5 minutes"
+                    : appliedFilter.level === "SOON"
+                    ? " whose time in between 5 to 20 minutes"
+                    : appliedFilter.level === "LATER"
+                    ? " whose time is after 20 minutes"
+                    : ""
+                  : ""}
+              </Text>
+            ) : (
+              ""
+            )}
+            {appliedFilter.sortBy === "salah_time" ? (
+              <Text style={[styles.filterMessage, { color: colors.text }]}>
+                Sorted by Salah Time.
+              </Text>
+            ) : (
+              ""
             )}
           </View>
-          {appliedFilter.salah ? (
-            <Text style={[styles.filterMessage, { color: colors.text }]}>
-              Showing results for{" "}
-              <Text style={{ color: "green" }}>{appliedFilter.salah}</Text>
-              {appliedFilter.level
-                ? appliedFilter.level === "PAST"
-                  ? " whose time is passed"
-                  : appliedFilter.level === "IMMEDIATE"
-                  ? " whose time is within 5 minutes"
-                  : appliedFilter.level === "SOON"
-                  ? " whose time in between 5 to 20 minutes"
-                  : appliedFilter.level === "LATER"
-                  ? " whose time is after 20 minutes"
-                  : ""
-                : ""}
-            </Text>
-          ) : (
-            ""
-          )}
-          {appliedFilter.sortBy === "salah_time" ? (
-            <Text style={[styles.filterMessage, { color: colors.text }]}>
-              Sorted by Salah Time.
-            </Text>
-          ) : (
-            ""
-          )}
-        </View>
-        {isLoading || locationLoading || favoriteMosqueLoading ? (
-          <View style={[
-              styles.container,
-              { justifyContent: "center", alignItems: "center" },
-            ]}>
-            <Loader />
-          </View>
-        ) : error ? (
-          <View
-            style={[
-              styles.container,
-              { justifyContent: "center", alignItems: "center" },
-            ]}
-          >
-            <Text style={{ color: colors.text }}>Some Error Occured</Text>
-          </View>
-        ) : (
-          <View style={{ flex: 1 }}>
-            <ScrollView
-              showsVerticalScrollIndicator={false}
-              keyboardShouldPersistTaps="handled"
-              contentContainerStyle={styles.scrollContent}
+          {isLoading || locationLoading || favoriteMosqueLoading ? (
+            <View style={[
+                styles.container,
+                { justifyContent: "center", alignItems: "center" },
+              ]}>
+              <Loader />
+            </View>
+          ) : error ? (
+            <View
+              style={[
+                styles.container,
+                { justifyContent: "center", alignItems: "center" },
+              ]}
             >
+              <Text style={{ color: colors.text }}>Some Error Occured</Text>
+            </View>
+          ) : (
+            <View>
               {!filteredData || filteredData.length === 0 ? (
                 <View style={styles.emptyState}>
                   <Text style={{ color: "orange", fontSize: 16 }}>
@@ -381,9 +434,9 @@ const Home = () => {
                   ))}
                 </View>
               )}
-            </ScrollView>
-          </View>
-        )}
+            </View>
+          )}
+        </ScrollView>
       </View>
 
       {/* ❌ Modal for location errors */}
@@ -575,15 +628,67 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
   },
   budgetSection: {
+    marginTop: 15,
     marginBottom: 10,
   },
   budgetSectionHeader: {
-    marginBottom: 16,
+    marginBottom: 8,
+  },
+  budgetSectionTitleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
   },
   budgetSectionTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    marginBottom: 4,
+  },
+  cityDropdownContainer: {
+    position: 'relative',
+  },
+  cityDropdown: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderRadius: 8,
+    minWidth: 120,
+  },
+  cityDropdownText: {
+    fontSize: 14,
+    fontWeight: '500',
+    flex: 1,
+  },
+  dropdownArrow: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cityDropdownMenu: {
+    position: 'absolute',
+    top: '100%',
+    right: 0,
+    minWidth: 120,
+    borderWidth: 1,
+    borderRadius: 8,
+    zIndex: 1000,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  cityDropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  cityDropdownItemText: {
+    fontSize: 14,
+    flexShrink: 0,
   },
   budgetSectionSubtitle: {
     fontSize: 14,
@@ -691,25 +796,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     gap: 10,
     paddingBottom: 20,
-  },
-  budgetSection: {
-    marginBottom: 12,
-  },
-  budgetSectionHeader: {
-    marginBottom: 6,
-    paddingHorizontal: 4,
-  },
-  budgetSectionTitle: {
-    fontSize: 14,
-    fontWeight: "bold",
-    marginBottom: 1,
-  },
-  budgetSectionSubtitle: {
-    fontSize: 12,
-  },
-  budgetCardsContainer: {
-    paddingHorizontal: 2,
-    gap: 4,
   },
 });
 
