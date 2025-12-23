@@ -3,8 +3,8 @@ import { Text, View } from 'react-native'
 
 const Notifiations = () => {
   return (
-    <View>
-      <Text>Notifiations</Text>
+    <View style={{ height: 300, justifyContent:'center'}}>
+      <Text style={{ textAlign:'center', color:'white'}}>No Notifiations</Text>
     </View>
   )
 }

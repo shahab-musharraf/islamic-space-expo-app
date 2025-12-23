@@ -9,7 +9,6 @@ import { useFavoriteMasjidStore } from '@/stores/useFavoriteMasjidStore';
 import { useUserLocationStore } from '@/stores/userLocationStore';
 import { Ionicons } from '@expo/vector-icons';
 import Entypo from '@expo/vector-icons/Entypo';
-import StarFilledIcon from '@expo/vector-icons/FontAwesome';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import { useTheme } from '@react-navigation/native';
 import { Image } from 'expo-image';
@@ -224,11 +223,6 @@ const Home = () => {
                     <MasjidCard
                       {...masjid}
                       />
-                    {hydrated && isFavorite(masjid._id) && (
-                      <View style={styles.favoriteIcon} pointerEvents="none">
-                          <StarFilledIcon name="star" size={18} color="#FFD700" />
-                      </View>
-                    )}
                   </View>
             ))}
             </ScrollView>
@@ -377,17 +371,6 @@ const styles = StyleSheet.create({
     width: '48%',
   },
 
-  favoriteIcon: {
-    position: 'absolute',
-    top: 3,
-    right: 16,
-
-    // backgroundColor: 'rgba(0,0,0,0.5)',
-    borderRadius: 16,
-    // padding: 6,
-
-    zIndex: 10,
-  },
 
   modalBackdrop: {
     flex: 1,
@@ -476,4 +459,4 @@ const styles = StyleSheet.create({
 
 });
 
-export default Home;
+export default Home

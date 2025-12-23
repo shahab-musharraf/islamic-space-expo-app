@@ -138,7 +138,6 @@ const ProfileScreen = () => {
       setPickedImage(null);
       setEditingName(false);
     } catch (err) {
-      console.error('Update profile error', err);
       showMessage('Failed to update profile. Please try again.');
     } finally {
       setIsUpdating(false);

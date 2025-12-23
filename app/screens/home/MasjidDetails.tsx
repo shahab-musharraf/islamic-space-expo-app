@@ -10,7 +10,7 @@ import StarOutlineIcon from '@expo/vector-icons/Feather';
 import StarFilledIcon from '@expo/vector-icons/FontAwesome';
 import { useRoute, useTheme } from '@react-navigation/native';
 import React, { useState } from 'react';
-import { ActivityIndicator, Alert, Dimensions, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import RazorpayCheckout from 'react-native-razorpay';
 import MasjidInfo from '../../../components/masjid-details/MasjidInfo';
 import Notifiations from '../../../components/masjid-details/Notifiations';
@@ -168,25 +168,6 @@ const MasjidDetails = () => {
   );
 };
 
-
-  // const handleRemoveFromFavorite = () => {
-  //   if(!_id) return;
-
-  //   try {
-  //     removeMasjidFromFavorite(_id, {
-  //       onSuccess: (data) => {
-  //         if(!data.success) return;
-  //         console.log(data, 'removed masjid from favorite response')
-  //         setFavorite({following: data.following ? null : following, favorites: favorites.filter(id => id !== data.masjidId)})
-  //         Alert.alert("This masjid has been removed from your favorite")
-  //       }
-  //     });
-  //   } catch (error) {
-      
-  //   }
-
-  //   console.log('remove from favorite', _id)
-  // }
   const handleRemoveFromFavorite = () => {
   if (!_id) return;
 
@@ -215,25 +196,6 @@ const MasjidDetails = () => {
   );
 };
 
-
-  console.log(following)
-
-  // const handleToggleFollow = () => {
-  //   const follow = isFollowing(_id)
-  //   try {
-  //     toggleFollow({ follow : !follow, masjidId: _id }, {
-  //       onSuccess: (data) => {
-  //         if(!data || !data.success) return;
-  //         setFavorite({
-  //           favorites: favorites,
-  //           following: data.following ? data.masjidId : null
-  //         })
-  //       }
-  //     })
-  //   } catch (error) {
-      
-  //   }
-  // }
   const handleToggleFollow = () => {
   const follow = isFollowing(_id);
 
@@ -293,7 +255,7 @@ const MasjidDetails = () => {
   }
 
   return (
-    <View style={{ }}>
+    <View style={{ flex: 1 }}>
       {/* {images && images.length > 0 && (
         <Image source={{ uri: images[0] }} style={styles.image} />
       )} */}
@@ -344,27 +306,7 @@ const MasjidDetails = () => {
       </View>
 
       </View>
-      {/* <ScrollView style={styles.container}>
-        <View style={ styles.addressContainer }>
-            <Text style={[styles.address, {color: colors.TEXT}]} numberOfLines={2} ellipsizeMode='tail'>{address}</Text>
-            <Text style={{ color: colors.TINT }}>[{getDisplayDistance(distance)}]</Text>
-            <Text style={{ color: colors.TINT }}>Donation Required</Text>
-            <Text style={{ color: colors.TINT }}>Donation received</Text>
-        </View>
-
-        <View style={styles.donateButtonContainer}>
-          <TouchableOpacity
-            style={[styles.donateButton, { backgroundColor: colors.BUTTON_BG }]}
-            onPress={handleDonatePress}
-          >
-            <Text style={[styles.donateButtonText, { color: colors.BUTTON_TEXT }]}>Donate</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView> */}
-
-      {/* --- 2. TAB BAR (Unchanged) --- */}
-       
-       <View>
+      
 
          <View style={[styles.tabBarContainer, { borderBottomColor: colors.border }]}>
             <TouchableOpacity
@@ -405,14 +347,17 @@ const MasjidDetails = () => {
             <View style={styles.noDataFoundContainer}>
               <Text style={{ color: 'red' }}>No data found</Text>
             </View> :
-            activeTab === 0 ? 
-            <MasjidInfo masjid={data}/> :
-            activeTab === 1 ?
-            <PrayerInfo /> :
-            <Notifiations />
+            <ScrollView
+              style={{ flex: 1 }}
+              contentContainerStyle={{ paddingBottom: 40 }}
+              showsVerticalScrollIndicator={false}
+            >
+              {activeTab === 0 && <MasjidInfo masjid={data} />}
+              {activeTab === 1 && <PrayerInfo prayerInfo={data?.prayerInfo} />}
+              {activeTab === 2 && <Notifiations />}
+            </ScrollView>
           }
        </View>
-    </View>
   )
 }
 
