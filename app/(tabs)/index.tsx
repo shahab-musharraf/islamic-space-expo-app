@@ -85,6 +85,8 @@ const Home = () => {
   const [updateLocationLoading, setUpdateLocationLoading] = useState(false);
   const [searchValue, setSearchValue] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchMode, setSearchMode] = useState<'global' | 'nearby'>('global');
+  const [searchModeSwitching, setSearchModeSwitching] = useState(false);
 
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [appliedFilter, setAppliedFilter] = useState<{
@@ -101,6 +103,7 @@ const Home = () => {
   const [cityDropdownVisible, setCityDropdownVisible] = useState(false);
 
   const slideAnim = useRef(new Animated.Value(-MODAL_HEIGHT)).current; // Set up animated value, starting off-screen (top)
+  const searchModeAnim = useRef(new Animated.Value(0)).current; // Animation for search mode switch
 
   // custom hooks and stores
   const { restoreLocation, clearLocation } = useUserLocationStore();
@@ -159,16 +162,18 @@ const Home = () => {
     // Create the regex only once per memoization cycle
     const sequentialRegex = createSequentialRegex(searchQuery);
 
-    if (!isLoading && data && data.length && searchQuery) {
+    if (!isLoading && data && data.length && searchQuery && searchMode === 'nearby') {
+      // Existing logic for nearby search
       return data.filter(
         (masjid: any) =>
           // Check if the regex pattern is found in the name or address
-          sequentialRegex.test(masjid.name) ||
-          sequentialRegex.test(masjid.address)
-      );
+            sequentialRegex.test(masjid.name) ||
+            sequentialRegex.test(masjid.address)
+        );
+      
     }
     return data;
-  }, [isLoading, data, searchQuery]);
+  }, [isLoading, data, searchQuery, searchMode]);
 
   // react effects
 
@@ -216,8 +221,29 @@ const Home = () => {
     setIsModalVisible(false);
   };
 
-  const closeModal = () => {
-    setIsModalVisible(false);
+  const handleSearchModeSwitch = () => {
+    if (searchModeSwitching) return; // Prevent multiple presses
+
+    const newMode = searchMode === 'global' ? 'nearby' : 'global';
+    setSearchModeSwitching(true);
+
+    // Animate the switch
+    Animated.sequence([
+      Animated.timing(searchModeAnim, {
+        toValue: 0.5,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+      Animated.timing(searchModeAnim, {
+        toValue: 1,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setSearchMode(newMode);
+      searchModeAnim.setValue(0);
+      setSearchModeSwitching(false);
+    });
   };
 
   return (
@@ -252,11 +278,11 @@ const Home = () => {
       </View>
 
       <View style={styles.paddingContainer}>
-        <View style={{ flexDirection: "row" }}>
+        <View style={styles.searchContainer}>
           <TextInput
             value={searchValue}
             onChangeText={setSearchValue}
-            placeholder="Search for Masjids"
+            placeholder={searchMode === "global" ? "Search for Masjid Globally" : "Search for Nearby Masjid"}
             placeholderTextColor={colors.DISABLED_TEXT}
             style={[
               styles.input,
@@ -267,6 +293,36 @@ const Home = () => {
               },
             ]}
           />
+          <TouchableOpacity
+            style={[
+              styles.searchModeButton,
+              {
+                backgroundColor: colors.BG_SECONDARY,
+                transform: [{ scale: searchModeAnim.interpolate({
+                  inputRange: [0, 0.5, 1],
+                  outputRange: [1, 0.95, 1],
+                }) }],
+                opacity: searchModeSwitching ? 0.7 : 1,
+              }
+            ]}
+            onPress={handleSearchModeSwitch}
+            disabled={searchModeSwitching}
+          >
+            {searchModeSwitching ? (
+              <ActivityIndicator size="small" color={colors.text} />
+            ) : (
+              <>
+                <Ionicons
+                  name={searchMode === 'global' ? 'globe-outline' : 'location-outline'}
+                  size={20}
+                  color={colors.text}
+                />
+                {/* <Text style={[styles.searchModeText, { color: colors.text }]}>
+                  {searchMode === 'global' ? 'Global' : 'Nearby'}
+                </Text> */}
+              </>
+            )}
+          </TouchableOpacity>
         </View>
 
         <ScrollView
@@ -332,7 +388,7 @@ const Home = () => {
               ) : budgetNeededError ? (
                 <View style={styles.budgetLoadingContainer}>
                   <Text style={[styles.loadingText, { color: colors.text + '60' }]}>
-                    Failed to load donation needs. Please try again.
+                    Failed to load data. Please restart the app.
                   </Text>
                 </View>
               ) : budgetNeededMasjids && budgetNeededMasjids.length > 0 ? (
@@ -495,7 +551,7 @@ const Home = () => {
         animationType="fade" // "fade" for the backdrop, we handle the slide
         transparent={true}
         visible={isModalVisible}
-        onRequestClose={closeModal}
+        onRequestClose={() => { setIsModalVisible(false); }}
       >
         {/* Backdrop: press to close */}
         <View style={styles.addressModalBackdrop}>
@@ -541,7 +597,7 @@ const Home = () => {
             <View style={styles.closeAddressModalButtonContainer}>
               <TouchableOpacity
                 style={styles.closeAddressModalButton}
-                onPress={closeModal}
+                onPress={() => setIsModalVisible(false)}
               >
                 <Text style={styles.closeAddressModalButtonText}>Close</Text>
               </TouchableOpacity>
@@ -714,8 +770,7 @@ const styles = StyleSheet.create({
   budgetLoadingContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 40,
-    minHeight: 120,
+    paddingVertical: 10,
   },
   loadingText: {
     fontSize: 14,
@@ -825,6 +880,25 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 8,
     fontSize: 16,
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  searchModeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    borderRadius: 8,
+    gap: 4,
+    // minWidth: 80,
+    justifyContent: 'center',
+  },
+  searchModeText: {
+    fontSize: 12,
+    fontWeight: '600',
   },
   masjidGrid: {
     flexDirection: "row",
