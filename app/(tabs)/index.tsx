@@ -284,12 +284,12 @@ const Home = () => {
           contentContainerStyle={styles.scrollContent}
         >
           {/* Budget Needed Masjids Section */}
-          {budgetNeededMasjids && budgetNeededMasjids.length > 0 && (
+          {(budgetNeededLoading || (budgetNeededMasjids && budgetNeededMasjids.length > 0)) && (
             <View style={styles.budgetSection}>
               <View style={styles.budgetSectionHeader}>
                 <View style={styles.budgetSectionTitleRow}>
                   <Text style={[styles.budgetSectionTitle, { color: colors.text }]}>
-                    🕌 High Donation Needed
+                    High Donation Needed
                   </Text>
                   <View style={styles.cityDropdownContainer}>
                     <TouchableOpacity
@@ -330,23 +330,35 @@ const Home = () => {
                     )}
                   </View>
                 </View>
-                {/* <Text style={[styles.budgetSectionSubtitle, { color: colors.text + '80' }]}>
-                  Help complete their maintenance or construction
-                </Text> */}
               </View>
 
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.budgetCardsContainer}
-              >
-                {budgetNeededMasjids.map((masjid: BudgetNeededMasjidProps) => (
-                  <BudgetNeededCard
-                    key={masjid._id}
-                    {...masjid}
-                  />
-                ))}
-              </ScrollView>
+              {budgetNeededLoading ? (
+                <View style={styles.budgetLoadingContainer}>
+                  <ActivityIndicator size="large" color={colors.text} />
+                  <Text style={[styles.loadingText, { color: colors.text + '80' }]}>
+                    Loading donation needs...
+                  </Text>
+                </View>
+              ) : budgetNeededError ? (
+                <View style={styles.budgetLoadingContainer}>
+                  <Text style={[styles.loadingText, { color: colors.text + '60' }]}>
+                    Failed to load donation needs. Please try again.
+                  </Text>
+                </View>
+              ) : (
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.budgetCardsContainer}
+                >
+                  {budgetNeededMasjids?.map((masjid: BudgetNeededMasjidProps) => (
+                    <BudgetNeededCard
+                      key={masjid._id}
+                      {...masjid}
+                    />
+                  ))}
+                </ScrollView>
+              )}
             </View>
           )}
 
@@ -695,6 +707,17 @@ const styles = StyleSheet.create({
   },
   budgetCardsContainer: {
     paddingRight: 20,
+  },
+  budgetLoadingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+    minHeight: 120,
+  },
+  loadingText: {
+    fontSize: 14,
+    marginTop: 10,
+    textAlign: 'center',
   },
   modalContainer: {
     backgroundColor: "#fff",

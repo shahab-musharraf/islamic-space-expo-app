@@ -1,4 +1,7 @@
 import { Theme } from "@/constants/types";
+import { useFavoriteMasjidStore } from "@/stores/useFavoriteMasjidStore";
+import StarFilledIcon from '@expo/vector-icons/FontAwesome';
+import FollowingIcons from '@expo/vector-icons/Ionicons';
 import { useNavigation, useTheme } from "@react-navigation/native";
 import { Image } from "expo-image";
 import React from "react";
@@ -8,8 +11,8 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 // Responsive dimensions based on screen size
 const CARD_WIDTH = Math.min(SCREEN_WIDTH * 0.42, 190); // Max 190px or 42% of screen width
-const CARD_HEIGHT = SCREEN_HEIGHT * 0.26; // 26% of screen height (optimized for compact design)
-const IMAGE_HEIGHT = CARD_HEIGHT * 0.42; // 42% of card height for image (balanced)
+const CARD_HEIGHT = SCREEN_HEIGHT * 0.32; // Increased from 26% to 32% for better button visibility
+const IMAGE_HEIGHT = CARD_HEIGHT * 0.38; // Adjusted to 38% for better proportion
 
 interface BudgetNeededCardProps {
   _id: string;
@@ -50,6 +53,10 @@ export const BudgetNeededCard: React.FC<BudgetNeededCardProps> = ({
 
   const progressBarColor = getProgressBarColor(progressPercentage);
 
+  const hydrated = useFavoriteMasjidStore(state => state.hydrated);
+  const isFavorite = useFavoriteMasjidStore(state => state.isFavorite(_id));
+  const isFollowing = useFavoriteMasjidStore(state => state.isFollowing(_id));
+
   return (
     <View style={[styles.container, { backgroundColor: colors.CARD, shadowColor: colors.TEXT }]}>
       {/* Masjid Image */}
@@ -60,16 +67,24 @@ export const BudgetNeededCard: React.FC<BudgetNeededCardProps> = ({
           contentFit="cover"
           placeholder={require('@/assets/images/homepage/logo-light.png')}
         />
-        <View style={[styles.overlay, { backgroundColor: 'rgba(0,0,0,0.4)' }]}>
+        {hydrated && isFavorite && (
+            <View style={styles.favoriteIcon} pointerEvents="none">
+                {
+                  isFollowing && <FollowingIcons name="checkmark-done-circle-sharp" size={24} color="white" />
+                }
+                <StarFilledIcon name="star" size={18} color="#FFD700" />
+            </View>
+          )}
+        {/* <View style={[styles.overlay, { backgroundColor: 'rgba(0,0,0,0.4)' }]}>
           <Text style={styles.locationText}>{city}, {state}</Text>
-        </View>
+        </View> */}
 
         {/* Remaining Amount Badge - Positioned absolutely */}
         <View style={[styles.remainingBadge, { backgroundColor: remainingAmount > 0 ? '#FF5722' : '#4CAF50' }]}>
           <Text style={styles.remainingText}>
             {remainingAmount > 0
               ? `₹${remainingAmount.toLocaleString()} needed`
-              : 'Goal achieved! 🎉'
+              : 'Budget achieved! 🎉'
             }
           </Text>
         </View>
@@ -95,6 +110,9 @@ export const BudgetNeededCard: React.FC<BudgetNeededCardProps> = ({
                 ]}
               />
             </View>
+            <Text style={[styles.percentageText, { color: progressBarColor }]}>
+              {progressPercentage.toFixed(1)}% collected
+            </Text>
             <View style={styles.budgetTextContainer}>
               <Text style={[styles.collectedText, { color: colors.TEXT }]}>
                 ₹{collectedAmount.toLocaleString()}
@@ -108,7 +126,7 @@ export const BudgetNeededCard: React.FC<BudgetNeededCardProps> = ({
 
         {/* CTA Button */}
         <TouchableOpacity
-          style={[styles.viewButton, { backgroundColor: '#2196F3' }]}
+          style={styles.viewButton}
           onPress={() => navigation.navigate('screens/home/MasjidDetails', { _id })}
         >
           <Text style={styles.viewButtonText}>View</Text>
@@ -153,32 +171,34 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   content: {
-    padding: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     flex: 1,
-    justifyContent: 'flex-start',
+    justifyContent: 'space-between',
+    minHeight: 120, // Ensure minimum height for content
   },
   textContent: {
-    // flex: 1, // Removed to allow natural height
+    flex: 1,
   },
   name: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: 'bold',
-    marginBottom: 2,
-    lineHeight: 14,
+    marginBottom: 4,
+    lineHeight: 16,
   },
   address: {
-    fontSize: 10,
-    marginBottom: 4,
-    lineHeight: 12,
+    fontSize: 12,
+    marginBottom: 8,
+    lineHeight: 14,
   },
   budgetContainer: {
-    marginBottom: 4,
+    marginBottom: 8,
   },
   progressBarContainer: {
-    height: 4,
+    height: 6,
     backgroundColor: '#E0E0E0',
-    borderRadius: 2,
-    marginBottom: 2,
+    borderRadius: 3,
+    marginBottom: 4,
     overflow: 'hidden',
   },
   progressBar: {
@@ -189,14 +209,31 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 1,
+    marginBottom: 2,
   },
   collectedText: {
-    fontSize: 10,
+    fontSize: 13,
     fontWeight: 'bold',
   },
   neededText: {
-    fontSize: 9,
+    fontSize: 13,
+  },
+  favoriteIcon: {
+    position: 'absolute',
+    bottom: 6,
+    right: 6,
+    flexDirection:'row',
+    alignItems:'center',
+    gap:3,
+    borderRadius: 16,
+    zIndex: 10,
+  },
+  percentageText: {
+    fontSize: 13,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginTop: 4,
+    marginBottom: 4,
   },
   remainingBadge: {
     position: 'absolute',
@@ -209,23 +246,25 @@ const styles = StyleSheet.create({
   },
   remainingText: {
     color: 'white',
-    fontSize: 8,
+    fontSize: 12,
     fontWeight: 'bold',
+    padding: 2
   },
   viewButton: {
     paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 4,
+    paddingHorizontal: 12,
+    borderRadius: 6,
     alignItems: 'center',
+    justifyContent: 'center',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
     elevation: 2,
-    marginTop: 6,
+    backgroundColor: 'green', // Ensure background color is set
   },
   viewButtonText: {
     color: 'white',
-    fontSize: 10,
+    fontSize: 14,
     fontWeight: 'bold',
   },
 });
