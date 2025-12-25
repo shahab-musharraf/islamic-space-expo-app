@@ -136,8 +136,6 @@ const Home = () => {
     error: budgetNeededError,
   } = useGetBudgetNeededMasjids("10", selectedCity);
 
-  console.log(budgetNeededMasjids, '&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&');
-
   useEffect(() => {
     if (favoriteMosqueSuccess && favoriteMosque) {
       setFavorite({
@@ -269,13 +267,6 @@ const Home = () => {
               },
             ]}
           />
-
-          <TouchableOpacity
-            style={styles.filterButton}
-            onPress={() => setFilterModalVisible(true)}
-          >
-            <Ionicons name="filter" size={22} color={colors.TEXT} />
-          </TouchableOpacity>
         </View>
 
         <ScrollView
@@ -284,8 +275,7 @@ const Home = () => {
           contentContainerStyle={styles.scrollContent}
         >
           {/* Budget Needed Masjids Section */}
-          {(budgetNeededLoading || (budgetNeededMasjids && budgetNeededMasjids.length > 0)) && (
-            <View style={styles.budgetSection}>
+          <View style={styles.budgetSection}>
               <View style={styles.budgetSectionHeader}>
                 <View style={styles.budgetSectionTitleRow}>
                   <Text style={[styles.budgetSectionTitle, { color: colors.text }]}>
@@ -345,28 +335,41 @@ const Home = () => {
                     Failed to load donation needs. Please try again.
                   </Text>
                 </View>
-              ) : (
+              ) : budgetNeededMasjids && budgetNeededMasjids.length > 0 ? (
                 <ScrollView
                   horizontal
                   showsHorizontalScrollIndicator={false}
                   contentContainerStyle={styles.budgetCardsContainer}
                 >
-                  {budgetNeededMasjids?.map((masjid: BudgetNeededMasjidProps) => (
+                  {budgetNeededMasjids.map((masjid: BudgetNeededMasjidProps) => (
                     <BudgetNeededCard
                       key={masjid._id}
                       {...masjid}
                     />
                   ))}
                 </ScrollView>
+              ) : (
+                <View style={styles.budgetNoDataContainer}>
+                  <Text style={[styles.noDataText, { color: colors.text + '60' }]}>
+                    No data found
+                  </Text>
+                </View>
               )}
             </View>
-          )}
 
           <View>
             <View style={styles.nearbySectionLabel}>
-              <Text style={[styles.section, { color: colors.text }]}>
-                Nearby Masjids
-              </Text>
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <Text style={[styles.section, { color: colors.text }]}>
+                  Nearby Masjids
+                </Text>
+                <TouchableOpacity
+                  style={styles.filterButton}
+                  onPress={() => setFilterModalVisible(true)}
+                >
+                  <Ionicons name="filter" size={22} color={colors.TINT} />
+                </TouchableOpacity>
+              </View>
               {(appliedFilter.salah ||
                 appliedFilter.level ||
                 appliedFilter.sortBy === "salah_time") && (
@@ -718,6 +721,16 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginTop: 10,
     textAlign: 'center',
+  },
+  budgetNoDataContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+  },
+  noDataText: {
+    fontSize: 14,
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
   modalContainer: {
     backgroundColor: "#fff",
