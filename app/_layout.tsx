@@ -52,6 +52,7 @@ function RootLayoutNav() {
           <Stack.Screen name="screens/home/MasjidDetails" options={
             ({route}:any) => ({ headerTitle: route?.params?.name || 'Masjid Details' , headerShown: true, headerTitleAlign: 'center'})
           } />
+          <Stack.Screen name="screens/home/FavoriteMasjidsScreen" options={{ headerTitle: 'My Favorite Masjids' , headerShown: true, headerTitleAlign: 'center'}} />
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="+not-found" />
         </Stack>

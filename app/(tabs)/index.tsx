@@ -62,6 +62,8 @@ interface BudgetNeededMasjidProps {
   address: string;
   city: string;
   state: string;
+  latitude?: number;
+  longitude?: number;
   collectedAmount: number;
   images: string[];
   isUnderConstruction: boolean;
@@ -317,9 +319,9 @@ const Home = () => {
                   size={20}
                   color={colors.text}
                 />
-                {/* <Text style={[styles.searchModeText, { color: colors.text }]}>
+                <Text style={[styles.searchModeText, { color: colors.text }]}>
                   {searchMode === 'global' ? 'Global' : 'Nearby'}
-                </Text> */}
+                </Text>
               </>
             )}
           </TouchableOpacity>
@@ -447,7 +449,7 @@ const Home = () => {
             </View>
             {appliedFilter.salah ? (
               <Text style={[styles.filterMessage, { color: colors.text }]}>
-                Showing results for{" "}
+                Showing masjids for{" "}
                 <Text style={{ color: "green" }}>{appliedFilter.salah}</Text>
                 {appliedFilter.level
                   ? appliedFilter.level === "PAST"
@@ -498,9 +500,14 @@ const Home = () => {
                 </View>
               ) : (
                 <View style={styles.masjidGrid}>
-                  {filteredData.map((masjid: MasjidCardProps) => (
+                  {filteredData.map((masjid: any) => (
                     <View key={masjid._id} style={styles.cardWrapper}>
-                      <MasjidCard {...masjid} />
+                      <MasjidCard
+                        {...masjid}
+                        latitude={masjid.latitude}
+                        longitude={masjid.longitude}
+                        isUnderConstruction={masjid.isUnderConstruction}
+                      />
                     </View>
                   ))}
                 </View>

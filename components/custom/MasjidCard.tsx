@@ -7,6 +7,7 @@ import { useNavigation, useTheme } from '@react-navigation/native';
 import { Image } from 'expo-image';
 import React from 'react';
 import {
+  Linking,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -35,6 +36,8 @@ interface MasjidCardProps {
   timeDiff?: string | null;
   prayerTime?: string | null;
   selectedPrayer?: string | null;
+  latitude?: number;
+  longitude?: number;
 }
 
 /* ------------------ COMPONENT ------------------ */
@@ -51,6 +54,8 @@ export const MasjidCard: React.FC<MasjidCardProps> = ({
   prayerTime,
   timeDiff,
   selectedPrayer,
+  latitude,
+  longitude,
 }) => {
   const navigation: any = useNavigation();
   const { colors } = useTheme() as Theme;
@@ -80,6 +85,13 @@ export const MasjidCard: React.FC<MasjidCardProps> = ({
       videos,
     });
     scale.value = withSpring(1, { damping: 10, stiffness: 100 });
+  };
+
+  const handleDirectionsPress = () => {
+    if (latitude && longitude) {
+      const url = `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`;
+      Linking.openURL(url);
+    }
   };
 
   return (
@@ -113,6 +125,18 @@ export const MasjidCard: React.FC<MasjidCardProps> = ({
               </Text>
             </View>
           )}
+
+          {/* OVERLAY ICONS */}
+          <View style={styles.overlayIconsContainer}>
+            {latitude && longitude && (
+              <TouchableOpacity
+                style={styles.mapDirectionIcon}
+                onPress={handleDirectionsPress}
+              >
+                <FollowingIcons name="navigate" size={16} color="white" />
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
 
         {/* CONTENT */}
@@ -283,5 +307,28 @@ const styles = StyleSheet.create({
   viewButtonText: {
     fontSize: 13,
     fontWeight: '700',
+  },
+  overlayIconsContainer: {
+    position: 'absolute',
+    bottom: 6,
+    left: 6,
+    flexDirection: 'row',
+    gap: 6,
+  },
+  constructionIcon: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  mapDirectionIcon: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

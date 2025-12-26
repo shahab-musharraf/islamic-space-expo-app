@@ -8,9 +8,10 @@ import { Theme } from '@/constants/types';
 import { useFavoriteMasjidStore } from '@/stores/useFavoriteMasjidStore';
 import StarOutlineIcon from '@expo/vector-icons/Feather';
 import StarFilledIcon from '@expo/vector-icons/FontAwesome';
+import FollowingIcons from '@expo/vector-icons/Ionicons';
 import { useRoute, useTheme } from '@react-navigation/native';
 import React, { useState } from 'react';
-import { ActivityIndicator, Alert, Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Dimensions, Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import RazorpayCheckout from 'react-native-razorpay';
 import MasjidInfo from '../../../components/masjid-details/MasjidInfo';
 import Notifiations from '../../../components/masjid-details/Notifiations';
@@ -44,6 +45,13 @@ const MasjidDetails = () => {
   const { _id, name, address,  } = route.params;
 
   const { data, isLoading, isError, isRefetching } = useGetMasjidDetailsByMasjidId(_id);
+
+  const handleDirectionsPress = () => {
+    if (data?.latitude && data?.longitude) {
+      const url = `https://www.google.com/maps/dir/?api=1&destination=${data.latitude},${data.longitude}`;
+      Linking.openURL(url);
+    }
+  };
 
   const handleDonatePress = async () => {
     if (isPaymentLoading) return;
@@ -265,6 +273,23 @@ const MasjidDetails = () => {
           videoUrl = {data && data.videos ? data.videos[0] : ''}
         />
 
+        {/* Overlay Icons */}
+        <View style={styles.overlayIconsContainer}>
+          {data?.isUnderConstruction && (
+            <View style={styles.constructionIcon}>
+              <FollowingIcons name="construct" size={20} color="#FFA500" />
+            </View>
+          )}
+          {data?.latitude && data?.longitude && (
+            <TouchableOpacity
+              style={styles.directionIcon}
+              onPress={handleDirectionsPress}
+            >
+              <FollowingIcons name="navigate" size={20} color="white" />
+            </TouchableOpacity>
+          )}
+        </View>
+
         <View style={styles.actionContainer}>
         {/* Follow Button */}
         {isFavorite(_id) && <TouchableOpacity
@@ -318,20 +343,22 @@ const MasjidDetails = () => {
               </Text>
             </TouchableOpacity>
             
-            <TouchableOpacity
-              style={[styles.tab, activeTab === 1 && [styles.activeTab, { borderBottomColor: colors.BUTTON_BG }]]}
-              onPress={() => setActiveTab(1)}
-            >
-              <Text style={[styles.tabText, { color: colors.TEXT}, activeTab === 1 && [styles.activeTabText, { color: colors.TEXT }]]}>
-                Prayer Timings
-              </Text>
-            </TouchableOpacity>
+            {!data?.isUnderConstruction && (
+              <TouchableOpacity
+                style={[styles.tab, activeTab === 1 && [styles.activeTab, { borderBottomColor: colors.BUTTON_BG }]]}
+                onPress={() => setActiveTab(1)}
+              >
+                <Text style={[styles.tabText, { color: colors.TEXT}, activeTab === 1 && [styles.activeTabText, { color: colors.TEXT }]]}>
+                  Prayer Timings
+                </Text>
+              </TouchableOpacity>
+            )}
 
             <TouchableOpacity
-              style={[styles.tab, activeTab === 2 && [styles.activeTab, { borderBottomColor: colors.BUTTON_BG }]]}
-              onPress={() => setActiveTab(2)}
+              style={[styles.tab, (data?.isUnderConstruction ? activeTab === 1 : activeTab === 2) && [styles.activeTab, { borderBottomColor: colors.BUTTON_BG }]]}
+              onPress={() => setActiveTab(data?.isUnderConstruction ? 1 : 2)}
             >
-              <Text style={[styles.tabText, { color: colors.TEXT }, activeTab === 2 && [styles.activeTabText, { color: colors.TEXT }]]}>
+              <Text style={[styles.tabText, { color: colors.TEXT }, (data?.isUnderConstruction ? activeTab === 1 : activeTab === 2) && [styles.activeTabText, { color: colors.TEXT }]]}>
                 Notifications
               </Text>
             </TouchableOpacity>
@@ -353,8 +380,8 @@ const MasjidDetails = () => {
               showsVerticalScrollIndicator={false}
             >
               {activeTab === 0 && <MasjidInfo masjid={data} />}
-              {activeTab === 1 && <PrayerInfo prayerInfo={data?.prayerInfo} />}
-              {activeTab === 2 && <Notifiations />}
+              {activeTab === 1 && !data?.isUnderConstruction && <PrayerInfo prayerInfo={data?.prayerInfo} />}
+              {(data?.isUnderConstruction ? activeTab === 1 : activeTab === 2) && <Notifiations />}
             </ScrollView>
           }
        </View>
@@ -511,7 +538,30 @@ favoriteIcon: {
       alignItems: "center",
       justifyContent: "center",
       minWidth: 60,
-    }
+    },
+    overlayIconsContainer: {
+      position: 'absolute',
+      top: 16,
+      left: 16,
+      flexDirection: 'row',
+      gap: 8,
+    },
+    constructionIcon: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      backgroundColor: 'rgba(0, 0, 0, 0.6)',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    directionIcon: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      backgroundColor: 'rgba(0, 0, 0, 0.6)',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
   })
 
   export default MasjidDetails

@@ -5,7 +5,7 @@ import FollowingIcons from '@expo/vector-icons/Ionicons';
 import { useNavigation, useTheme } from "@react-navigation/native";
 import { Image } from "expo-image";
 import React from "react";
-import { Dimensions, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Dimensions, Linking, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
@@ -20,6 +20,8 @@ interface BudgetNeededCardProps {
   address: string;
   city: string;
   state: string;
+  latitude?: number;
+  longitude?: number;
   collectedAmount: number;
   images: string[];
   isUnderConstruction: boolean;
@@ -33,10 +35,13 @@ export const BudgetNeededCard: React.FC<BudgetNeededCardProps> = ({
   address,
   city,
   state,
+  latitude,
+  longitude,
   collectedAmount,
   images,
   remainingAmount,
   totalRequired,
+  isUnderConstruction
 }) => {
   const { colors } = useTheme() as Theme;
   const navigation: any = useNavigation();
@@ -57,6 +62,13 @@ export const BudgetNeededCard: React.FC<BudgetNeededCardProps> = ({
   const isFavorite = useFavoriteMasjidStore(state => state.isFavorite(_id));
   const isFollowing = useFavoriteMasjidStore(state => state.isFollowing(_id));
 
+  const handleDirectionsPress = () => {
+    if (latitude && longitude) {
+      const url = `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`;
+      Linking.openURL(url);
+    }
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: colors.CARD, shadowColor: colors.TEXT }]}>
       {/* Masjid Image */}
@@ -75,6 +87,23 @@ export const BudgetNeededCard: React.FC<BudgetNeededCardProps> = ({
                 <StarFilledIcon name="star" size={18} color="#FFD700" />
             </View>
           )}
+
+        {/* Direction Icon - Bottom Left */}
+        {latitude && longitude && (
+          <TouchableOpacity
+            style={styles.directionIcon}
+            onPress={handleDirectionsPress}
+          >
+            <FollowingIcons name="navigate" size={15} color="white" />
+          </TouchableOpacity>
+        )}
+
+        {/* Under Construction Icon - Next to Direction Icon */}
+        {isUnderConstruction && (
+          <View style={styles.constructionIcon}>
+            <FollowingIcons name="construct" size={15} color="#FFA500" />
+          </View>
+        )}
         {/* <View style={[styles.overlay, { backgroundColor: 'rgba(0,0,0,0.4)' }]}>
           <Text style={styles.locationText}>{city}, {state}</Text>
         </View> */}
@@ -226,6 +255,24 @@ const styles = StyleSheet.create({
     alignItems:'center',
     gap:3,
     borderRadius: 16,
+    zIndex: 10,
+  },
+  directionIcon: {
+    position: 'absolute',
+    bottom: 6,
+    left: 6,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    borderRadius: 20,
+    padding: 4,
+    zIndex: 10,
+  },
+  constructionIcon: {
+    position: 'absolute',
+    bottom: 6,
+    left: 35, // Positioned to the right of direction icon (6 + 28 + 6)
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    borderRadius: 20,
+    padding: 4,
     zIndex: 10,
   },
   percentageText: {

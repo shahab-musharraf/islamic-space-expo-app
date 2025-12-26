@@ -25,7 +25,7 @@ const MasjidUpdateLabel: React.FC<Props> = ({ status }) => {
   return (
     <View style={[styles.badge, { backgroundColor: statusStyle.backgroundColor }]}>
       <Text style={[styles.badgeText, { color: statusStyle.textColor }]}>
-        {statusStyle.displayText}
+        Update Status: {statusStyle.displayText}
       </Text>
     </View>
   );
@@ -84,6 +84,5 @@ const styles = StyleSheet.create({
   badgeText: {
     fontSize: 12,
     fontWeight: '600', // Semi-bold
-    textTransform: 'uppercase', // Professional look
   },
 });

@@ -16,11 +16,12 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
+  Linking,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useUserProfileStore } from '../../stores/userProfileStore';
@@ -164,7 +165,7 @@ const ProfileScreen = () => {
   };
 
   const handleMyWishlists = () => {
-    // navigation.navigate('screens/wishlist/MyWishlist'); // adjust route name if needed
+    navigation.navigate('screens/home/FavoriteMasjidsScreen');
   };
 
   const handleMasjidPanelNavigation = () => {
@@ -173,6 +174,11 @@ const ProfileScreen = () => {
 
   const handleAdminPanelNavigation = () => {
     navigation.navigate('screens/admin-panel/AdminPanelScreen');
+  };
+
+  const handleReadQuranSharif = () => {
+    const playStoreUrl = 'https://play.google.com/store/apps/details?id=com.international.islam360';
+    Linking.openURL(playStoreUrl);
   };
 
   // Compute if anything changed (show Update Profile button)
@@ -334,6 +340,14 @@ const ProfileScreen = () => {
             <Feather name="chevron-right" size={24} color={colors.DISABLED_TEXT} />
           </TouchableOpacity>
         ) : null}
+
+        <TouchableOpacity style={styles.optionRow} onPress={handleReadQuranSharif}>
+          <View style={styles.iconTextContainer}>
+            <FontAwesome5 name="quran" size={20} color={colors.ICON} style={styles.icon} />
+            <Text style={{ ...styles.optionText, color: colors.TEXT }}>Read Quran Sharif</Text>
+          </View>
+          <Feather name="external-link" size={20} color={colors.DISABLED_TEXT} />
+        </TouchableOpacity>
       </View>
 
       {/* Logout Button at Bottom Center */}

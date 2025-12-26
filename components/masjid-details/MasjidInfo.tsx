@@ -1,6 +1,7 @@
 import { Theme } from '@/constants/types';
 import { useTheme } from '@react-navigation/native';
 // import * as Clipboard from 'expo-clipboard';
+import FollowingIcons from '@expo/vector-icons/Ionicons';
 import React, { useState } from 'react';
 import {
   Alert,
@@ -124,9 +125,14 @@ const MasjidInfo = ({ masjid }: { masjid: any }) => {
     >
       {/* 🕌 BASIC INFO */}
       <View style={[styles.card, { backgroundColor: colors.CARD }]}>
-        <Text style={[styles.name, { color: colors.TEXT }]}>
-          {masjid.name}
-        </Text>
+        <View style={styles.nameContainer}>
+          <Text style={[styles.name, { color: colors.TEXT }]}>
+            {masjid.name}
+          </Text>
+          {isUnderConstruction && (
+            <FollowingIcons name="construct" size={20} color="#FFA500" style={styles.constructionIconInline} />
+          )}
+        </View>
         <Text style={[styles.address, { color: colors.TEXT_SECONDARY }]}>
           {masjid.address}
         </Text>
@@ -284,7 +290,9 @@ const styles = StyleSheet.create({
   },
 
   name: { fontSize: 20, fontWeight: '700' },
-  address: { fontSize: 15, marginTop: 6, lineHeight: 20 },
+  nameContainer: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
+  constructionIconInline: { marginLeft: 8 },
+  address: { fontSize: 15, lineHeight: 20 },
 
   amountLabel: { fontSize: 14 },
   amountValue: { fontSize: 26, fontWeight: '800', marginTop: 4 },
