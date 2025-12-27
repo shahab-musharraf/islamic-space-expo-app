@@ -78,11 +78,6 @@ export const MasjidCard: React.FC<MasjidCardProps> = ({
   const handleViewPress = () => {
     navigation.navigate('screens/home/MasjidDetails', {
       _id,
-      name,
-      images,
-      address,
-      distance,
-      videos,
     });
     scale.value = withSpring(1, { damping: 10, stiffness: 100 });
   };

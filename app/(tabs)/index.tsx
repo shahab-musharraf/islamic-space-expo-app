@@ -1,6 +1,7 @@
 import { useGetAllFavoriteMosque } from "@/apis/favoriteMosque/useGetAllFavoriteMosque";
 import { useGetAllNearbyMasjids } from "@/apis/masjid/useGetAllMasjids";
 import { useGetBudgetNeededMasjids } from "@/apis/masjid/useGetBudgetNeededMasjids";
+import { useGlobalSearch } from "@/apis/masjid/useGlobalSearch";
 import { BudgetNeededCard } from "@/components/custom/BudgetNeededCard";
 import { MasjidCard } from "@/components/custom/MasjidCard";
 import FilterSortModal from "@/components/global/FilterSortModal";
@@ -12,13 +13,14 @@ import { useUserLocationStore } from "@/stores/userLocationStore";
 import { Ionicons } from "@expo/vector-icons";
 import Entypo from "@expo/vector-icons/Entypo";
 import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
-import { useTheme } from "@react-navigation/native";
+import { useNavigation, useTheme } from "@react-navigation/native";
 import { Image } from "expo-image";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
   Dimensions,
+  FlatList,
   Modal,
   Pressable,
   ScrollView,
@@ -103,6 +105,7 @@ const Home = () => {
 
   const [selectedCity, setSelectedCity] = useState("India");
   const [cityDropdownVisible, setCityDropdownVisible] = useState(false);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
 
   const slideAnim = useRef(new Animated.Value(-MODAL_HEIGHT)).current; // Set up animated value, starting off-screen (top)
   const searchModeAnim = useRef(new Animated.Value(0)).current; // Animation for search mode switch
@@ -120,6 +123,7 @@ const Home = () => {
     isLoading: locationLoading,
   } = useUserLocation();
   const { colors } = useTheme() as Theme;
+  const navigation : any = useNavigation();
   const { data, error, isLoading } = useGetAllNearbyMasjids(
     RADIUS,
     LIMIT,
@@ -141,6 +145,16 @@ const Home = () => {
     error: budgetNeededError,
   } = useGetBudgetNeededMasjids("10", selectedCity);
 
+  const { data: globalSearchData, isLoading: globalSearchLoading, error: globalSearchError } = useGlobalSearch(debouncedSearch);
+
+  // Debounce search value
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchValue);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchValue]);
+
   useEffect(() => {
     if (favoriteMosqueSuccess && favoriteMosque) {
       setFavorite({
@@ -161,10 +175,11 @@ const Home = () => {
   }, [cityDropdownVisible]);
 
   const filteredData = useMemo(() => {
+    // const searchText = searchMode === 'nearby' ? searchValue : debouncedSearch;
     // Create the regex only once per memoization cycle
-    const sequentialRegex = createSequentialRegex(searchQuery);
+    const sequentialRegex = createSequentialRegex(debouncedSearch);
 
-    if (!isLoading && data && data.length && searchQuery && searchMode === 'nearby') {
+    if (!isLoading && data && data.length && debouncedSearch && searchMode === 'nearby') {
       // Existing logic for nearby search
       return data.filter(
         (masjid: any) =>
@@ -175,7 +190,7 @@ const Home = () => {
       
     }
     return data;
-  }, [isLoading, data, searchQuery, searchMode]);
+  }, [isLoading, data, searchValue, debouncedSearch, searchMode]);
 
   // react effects
 
@@ -204,14 +219,6 @@ const Home = () => {
   }, [isModalVisible, slideAnim]);
 
 
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      setSearchQuery(searchValue);
-    }, 500);
-    return () =>{
-      clearTimeout(timeout)
-    }
-  }, [searchValue, searchQuery, setSearchValue, setSearchQuery])
 
   // functions
 
@@ -292,9 +299,15 @@ const Home = () => {
                 backgroundColor: colors.BG_SECONDARY,
                 color: colors.TEXT,
                 flex: 1,
+                paddingRight: searchValue.length > 0 ? 40 : 20, // Extra padding for clear icon
               },
             ]}
           />
+          {searchValue.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchValue('')} style={styles.clearButton}>
+              <Ionicons name="close" size={20} color={colors.text} />
+            </TouchableOpacity>
+          )}
           <TouchableOpacity
             style={[
               styles.searchModeButton,
@@ -319,13 +332,53 @@ const Home = () => {
                   size={20}
                   color={colors.text}
                 />
-                <Text style={[styles.searchModeText, { color: colors.text }]}>
+                {/* <Text style={[styles.searchModeText, { color: colors.text }]}>
                   {searchMode === 'global' ? 'Global' : 'Nearby'}
-                </Text>
+                </Text> */}
               </>
             )}
           </TouchableOpacity>
         </View>
+
+        {/* Global Search Suggestions */}
+        {searchMode === 'global' && debouncedSearch.trim().length > 2 && (
+          <View style={styles.suggestionsContainer}>
+            {globalSearchLoading ? (
+              <View style={styles.centered}>
+                <ActivityIndicator size="small" color={colors.TINT} />
+              </View>
+            ) : globalSearchError ? (
+              <View style={styles.centered}>
+                <Text style={[styles.message, { color: colors.TEXT }]}>Failed to load search results</Text>
+              </View>
+            ) : globalSearchData && globalSearchData.length > 0 ? (
+              <FlatList
+                data={globalSearchData}
+                keyExtractor={(item) => item._id}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={[styles.suggestionItem, { borderBottomColor: colors.DISABLED_TEXT }]}
+                    onPress={() => navigation.navigate('screens/home/MasjidDetails', { _id: item._id })}
+                  >
+                    {item.image && (
+                      <Image source={{ uri: item.image }} style={styles.suggestionImage} />
+                    )}
+                    <View style={styles.suggestionTextContainer}>
+                      <Text style={[styles.suggestionName, { color: colors.TEXT }]}>{item.name}</Text>
+                      <Text style={[styles.suggestionAddress, { color: colors.DISABLED_TEXT }]}>{item.address}</Text>
+                    </View>
+                  </TouchableOpacity>
+                )}
+                style={styles.suggestionsList}
+                showsVerticalScrollIndicator={false}
+              />
+            ) : (
+              <View style={styles.centered}>
+                <Text style={[styles.message, { color: colors.TEXT }]}>No masjid found</Text>
+              </View>
+            )}
+          </View>
+        )}
 
         <ScrollView
           showsVerticalScrollIndicator={false}
@@ -889,6 +942,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   searchContainer: {
+    position: 'relative',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
@@ -907,12 +961,65 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
   },
+  clearButton: {
+    position: 'absolute',
+    right: 60, // Position before the search mode button
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+  },
   masjidGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "space-between",
     gap: 10,
     paddingBottom: 20,
+  },
+  suggestionsContainer: {
+    maxHeight: 200,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    marginTop: 5,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  suggestionsList: {
+    maxHeight: 200,
+  },
+  suggestionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+    borderBottomWidth: 1,
+  },
+  suggestionImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 10,
+  },
+  suggestionTextContainer: {
+    flex: 1,
+  },
+  suggestionName: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  suggestionAddress: {
+    fontSize: 14,
+  },
+  centered: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  message: {
+    fontSize: 16,
   },
 });
 

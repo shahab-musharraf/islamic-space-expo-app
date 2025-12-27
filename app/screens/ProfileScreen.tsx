@@ -181,6 +181,10 @@ const ProfileScreen = () => {
     Linking.openURL(playStoreUrl);
   };
 
+  // const handleMyDocuments = () => {
+  //   navigation.navigate('screens/MyDocumentsScreen');
+  // };
+
   // Compute if anything changed (show Update Profile button)
   const nameChanged = Boolean(editedName && editedName !== (profile?.name ?? ''));
   const avatarChanged = Boolean(pickedImage);
@@ -340,6 +344,16 @@ const ProfileScreen = () => {
             <Feather name="chevron-right" size={24} color={colors.DISABLED_TEXT} />
           </TouchableOpacity>
         ) : null}
+{/* 
+        {profile && profile.role !== roles.USER ? (
+          <TouchableOpacity style={styles.optionRow} onPress={handleMyDocuments}>
+            <View style={styles.iconTextContainer}>
+              <Feather name="file-text" size={20} color={colors.ICON} style={styles.icon} />
+              <Text style={{ ...styles.optionText, color: colors.TEXT }}>My Documents</Text>
+            </View>
+            <Feather name="chevron-right" size={24} color={colors.DISABLED_TEXT} />
+          </TouchableOpacity>
+        ) : null} */}
 
         <TouchableOpacity style={styles.optionRow} onPress={handleReadQuranSharif}>
           <View style={styles.iconTextContainer}>
@@ -349,6 +363,17 @@ const ProfileScreen = () => {
           <Feather name="external-link" size={20} color={colors.DISABLED_TEXT} />
         </TouchableOpacity>
       </View>
+
+      {/* Message for Muazzin/Managers */}
+      {profile && !String(profile.role || '').split(',').includes(roles.MASJID_SECRETARY) && <View style={styles.messageContainer}>
+        <Text style={[styles.messageText, { color: colors.TEXT }]}>
+          If you are a muazzin or managing a masjid, please contact us to list the masjid on the app. This will help Muslims find it easily.
+        </Text>
+        <TouchableOpacity onPress={() => Linking.openURL('https://wa.me/7033043952')} style={styles.whatsappButton}>
+          <FontAwesome name="whatsapp" size={24} color="#25D366" />
+          <Text style={[styles.whatsappText, { color: colors.TEXT }]}>Contact via WhatsApp</Text>
+        </TouchableOpacity>
+      </View>}
 
       {/* Logout Button at Bottom Center */}
       <View style={styles.logoutContainer}>
@@ -434,6 +459,30 @@ cancelText: {
 
   optionContainer: {
     marginBottom: 20,
+  },
+  messageContainer: {
+    marginBottom: 20,
+    padding: 15,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  messageText: {
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 10,
+    lineHeight: 20,
+  },
+  whatsappButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+    backgroundColor: '#e0e0e0',
+    borderRadius: 5,
+  },
+  whatsappText: {
+    fontSize: 14,
+    marginLeft: 8,
   },
   optionRow: {
     flexDirection: 'row',
