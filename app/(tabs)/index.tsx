@@ -503,6 +503,9 @@ const Home = () => {
                                 >
                                   India
                                 </Text>
+                                {selectedCity === 'India' && (
+                                  <Ionicons name="checkmark" size={16} color={colors.text} />
+                                )}
                               </TouchableOpacity>
 
                               {/* CITY LIST */}
@@ -511,7 +514,7 @@ const Home = () => {
                                   key={city}
                                   style={styles.cityDropdownItem}
                                   onPress={() => {
-                                    setSelectedCity(city.split(",")[0]);
+                                    setSelectedCity(city);
                                     setCityDropdownVisible(false);
                                   }}
                                 >
@@ -523,6 +526,9 @@ const Home = () => {
                                   >
                                     {city}
                                   </Text>
+                                  {selectedCity === city && (
+                                    <Ionicons name="checkmark" size={16} color={colors.text} />
+                                  )}
                                 </TouchableOpacity>
                               ))}
                             </ScrollView>
