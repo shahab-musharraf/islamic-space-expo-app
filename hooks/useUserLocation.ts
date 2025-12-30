@@ -9,35 +9,35 @@ interface UseUserLocationResult {
   location: UserLocation | null;
   errorMsg: string | null;
   isLoading: boolean;
-  fetchLocation: () => Promise<void>;
+  fetchLocation: (force?: boolean) => Promise<void>;
   handleOpenSettings: () => void;
   handleExitApp: () => void;
   restoreLocation: () => void;
 }
 
+// Helper: fetch address from latitude/longitude
+export const getAddressFromCoords = async (lat: number, lng: number): Promise<UserAddress | null> => {
+ try {
+   const [addr] = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lng });
+   return {
+     street: addr.street ?? '',
+     city: addr.city ?? '',
+     state: addr.region ?? '',
+     country: addr.country ?? '',
+     postalCode: addr.postalCode ?? '',
+     formattedAddress: addr.formattedAddress ?? `${addr.name || ''}, ${addr.street || ''}, ${addr.city || ''}, ${addr.region || ''}, ${addr.postalCode || ''}, ${addr.country || ''}`,
+   };
+ } catch (err) {
+   console.warn('Reverse geocode error:', err);
+   return null;
+ }
+};
 
 export const useUserLocation = (): UseUserLocationResult => {
   const { location, setLocation, restoreLocation } = useUserLocationStore((state) => state);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-   // Helper: fetch address from latitude/longitude
-  const getAddressFromCoords = async (lat: number, lng: number): Promise<UserAddress | null> => {
-    try {
-      const [addr] = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lng });
-      return {
-        street: addr.street ?? '',
-        city: addr.city ?? '',
-        state: addr.region ?? '',
-        country: addr.country ?? '',
-        postalCode: addr.postalCode ?? '',
-        formattedAddress: addr.formattedAddress ?? `${addr.name || ''}, ${addr.street || ''}, ${addr.city || ''}, ${addr.region || ''}, ${addr.postalCode || ''}, ${addr.country || ''}`,
-      };
-    } catch (err) {
-      console.warn('Reverse geocode error:', err);
-      return null;
-    }
-  };
 
   // Fetch location function
   // const fetchLocation = useCallback(async () => {
@@ -103,8 +103,8 @@ export const useUserLocation = (): UseUserLocationResult => {
   //   }
   // }, [setLocation])
 
-  const fetchLocation = useCallback(async () => {
-    if(location) {
+  const fetchLocation = useCallback(async (force = false) => {
+    if(location && !force) {
       setErrorMsg('');
       return;
     }
@@ -162,8 +162,10 @@ export const useUserLocation = (): UseUserLocationResult => {
       setIsLoading(true);
       await restoreLocation();
 
-      if (!location) {
-        console.log('Location not found')
+      // Check the store state directly after restore
+      const storeLocation = useUserLocationStore.getState().location;
+      if (!storeLocation) {
+        console.log('Location not found after restore')
         await fetchLocation();
       } else {
         setIsLoading(false);
@@ -171,7 +173,7 @@ export const useUserLocation = (): UseUserLocationResult => {
       }
     };
 
-    if(!location) init();
+    init();
     // Run only once on mount
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

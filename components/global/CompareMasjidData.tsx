@@ -279,9 +279,6 @@ const CompareMasjidDataModal: React.FC<Props> = ({
         <View style={styles.modal}>
           <View style={styles.header}>
             <Text style={styles.title}>{title}</Text>
-            <TouchableOpacity onPress={onClose} style={styles.closeBtnSmall}>
-              <Text style={styles.closeBtnTextSmall}>Close</Text>
-            </TouchableOpacity>
           </View>
 
           {isLoading || isRefetching ? (
@@ -293,6 +290,12 @@ const CompareMasjidDataModal: React.FC<Props> = ({
               {renderFields(selectedMasjid, selectedMasjid.updatedMasjidData)}
             </ScrollView>
           )}
+          
+            <View style={{alignItems:'center'}}>
+              <TouchableOpacity onPress={onClose} style={styles.closeBtnSmall}>
+                <Text style={styles.closeBtnTextSmall}>Close</Text>
+              </TouchableOpacity>
+            </View>
         </View>
       </View>
     </Modal>
@@ -327,6 +330,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 6,
+    textAlign:'center'
   },
   closeBtnTextSmall: { color: "#fff", fontWeight: "700" },
   scrollContent: { padding: 14 },

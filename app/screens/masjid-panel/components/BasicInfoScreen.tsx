@@ -1,15 +1,17 @@
 import AddImageIcon from "@/components/global/AddImageIcon";
 import AddVideoIcon from "@/components/global/AddVideoIcon";
 import { Theme } from "@/constants/types";
-import { useUserLocation } from "@/hooks/useUserLocation";
+import { getAddressFromCoords, useUserLocation } from "@/hooks/useUserLocation";
 import { useUserLocationStore } from "@/stores/userLocationStore";
 import { showMessage } from "@/utils/functions";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@react-navigation/native";
 import { Image, ImageBackground } from "expo-image";
 import * as ImagePicker from 'expo-image-picker';
-import React, { useEffect } from "react";
-import { ActivityIndicator, Alert, FlatList, Modal, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from "react-native";
+import * as Location from 'expo-location';
+import { AppleMaps, Coordinates, GoogleMaps } from 'expo-maps';
+import React, { useEffect, useState } from "react";
+import { ActivityIndicator, Alert, FlatList, Modal, Platform, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { Asset, BasicInfo } from "../AddMasjidScreen";
 
@@ -25,6 +27,11 @@ const BasicInfoScreen : React.FC<BasicInfoProps> = ({ basicInfo, setBasicInfo })
   const { location, clearLocation } = useUserLocationStore(state => state);
   const { fetchLocation, errorMsg, isLoading, handleExitApp, handleOpenSettings  } = useUserLocation();
   
+  // Map modal state
+  const [isMapModalVisible, setIsMapModalVisible] = useState(false);
+  const [mapCoordinates, setMapCoordinates] = useState<Coordinates | null>(null);
+  const [isLocationChanged, setIsLocationChanged] = useState(false);
+  const [isCurrentLocationLoading, setIsCurrentLocationLoading] = useState(false);
 
 
 
@@ -277,12 +284,106 @@ const BasicInfoScreen : React.FC<BasicInfoProps> = ({ basicInfo, setBasicInfo })
         longitude: location.coords.longitude.toString(),
       })
     }
-  }, [location])
+  }, [])
 
   const refetchCurrLocation = async () => {
-    await useUserLocationStore.getState().clearLocation(); // wait for clearing
-    await   fetchLocation();
+    await fetchLocation(true);
   }
+
+  // Map modal functions
+  const openMapModal = () => {
+    const lat = parseFloat(basicInfo.latitude);
+    const lng = parseFloat(basicInfo.longitude);
+    if (!isNaN(lat) && !isNaN(lng)) {
+      setMapCoordinates({ latitude: lat, longitude: lng });
+    } else {
+      // Default to India center if no coordinates
+      setMapCoordinates({ latitude: 28.6139, longitude: 77.2090 });
+    }
+    setIsLocationChanged(false);
+    setIsMapModalVisible(true);
+  };
+
+  const getCurrentLocationOnMap = async () => {
+    setIsCurrentLocationLoading(true);
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        showMessage('Location permission is required to get current location');
+        setIsCurrentLocationLoading(false);
+        return;
+      }
+
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High,
+      });
+
+      const coords: Coordinates = {
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+      };
+
+      setMapCoordinates(coords);
+      setIsLocationChanged(true);
+      setIsCurrentLocationLoading(false);
+    } catch (error) {
+      console.warn('Error getting current location:', error);
+      showMessage('Failed to get current location');
+      setIsCurrentLocationLoading(false);
+    }
+  };
+
+  const handleMapPress = (event?: { coordinates?: Coordinates }) => {
+    if (!event?.coordinates) {
+      showMessage('Tap on an empty area of the map to select location');
+      return;
+    }
+
+    setMapCoordinates(event.coordinates);
+    setIsLocationChanged(true);
+  };
+
+
+  const confirmLocation = async () => {
+    if (!mapCoordinates || !mapCoordinates.latitude || !mapCoordinates.longitude) return;
+
+    const { status } = await Location.requestForegroundPermissionsAsync();
+    
+      if (status !== 'granted') {
+        throw new Error('Location permission denied');
+      }
+
+    const {latitude, longitude} = mapCoordinates;
+
+    try {
+      // Reverse geocode to get address
+      const addressResult = await getAddressFromCoords(latitude, longitude);
+
+      if (addressResult) {
+        const fullAddress = addressResult.formattedAddress ?? [
+          addressResult.street,
+          addressResult.city,
+          addressResult.state,
+          addressResult.postalCode,
+          addressResult.country
+        ].filter(Boolean).join(', ');
+
+        setBasicInfo((prev: BasicInfo) => ({
+          ...prev,
+          address: fullAddress,
+          city: addressResult.city || '',
+          state: addressResult.state || '',
+          latitude: latitude.toString(),
+          longitude: longitude.toString(),
+        }));
+      }
+    } catch (error) {
+      console.warn('Reverse geocode error:', error);
+      showMessage('Failed to get address for selected location');
+    }
+
+    setIsMapModalVisible(false);
+  };
 
   const handleIsUnderConstruction = () => {
     if(!basicInfo.isUnderConstruction){
@@ -290,7 +391,8 @@ const BasicInfoScreen : React.FC<BasicInfoProps> = ({ basicInfo, setBasicInfo })
     }
     setBasicInfo((prev: BasicInfo) => ({
           ...prev,
-          isUnderConstruction: !prev.isUnderConstruction
+          isUnderConstruction: !prev.isUnderConstruction,
+          donationRequired: !prev.isUnderConstruction ? true : prev.donationRequired
       }))
   }
 
@@ -321,13 +423,111 @@ const BasicInfoScreen : React.FC<BasicInfoProps> = ({ basicInfo, setBasicInfo })
                     <Text style={styles.modalBtnText}>Open Settings</Text>
                   </TouchableOpacity>
                 }
-                <TouchableOpacity style={[styles.modalBtn, {backgroundColor: colors.BUTTON_BG}]} onPress={fetchLocation}>
+                <TouchableOpacity style={[styles.modalBtn, {backgroundColor: colors.BUTTON_BG}]} onPress={() => fetchLocation(true)}>
                   <Text style={[styles.modalBtnText, {color: colors.BUTTON_TEXT}]}>{errorMsg === "Please enable GPS!" ? "Enable" : "Retry"}</Text>
                 </TouchableOpacity>
             </View>
           </View>
         </View>
       </Modal>
+
+      {/* Map Modal */}
+      <Modal
+        visible={isMapModalVisible}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={() => setIsMapModalVisible(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={[styles.mapModalContainer, { backgroundColor: colors.BACKGROUND }]}>
+            <Text style={styles.mapModalTitle}>Select Location</Text>
+            <Text style={styles.mapInstruction}>Tap on an empty area of the map to select location</Text>
+            
+            <View style={styles.mapContainer}>
+              {Platform.OS === 'ios' ? (
+                <AppleMaps.View
+                  style={styles.map}
+                  onMapClick={handleMapPress}
+                  cameraPosition={{
+                    ...mapCoordinates!,
+                    zoom: 18,
+                  }}
+                  // region={{
+                  //   latitude: mapCoordinates!.latitude,
+                  //   longitude: mapCoordinates!.longitude,
+                  //   latitudeDelta: 10, // Restrict zoom level to show India
+                  //   longitudeDelta: 10,
+                  // }}
+                  markers={[
+                    {
+                      coordinates: mapCoordinates!,
+                      title: 'Selected Location',
+                      id: 'selected',
+                    },
+                  ]}
+                  // mapType="standard"
+                  // showsUserLocation={false}
+                  // showsMyLocationButton={false}
+                />
+              ) : (
+                <GoogleMaps.View
+                  style={styles.map}
+                  onMapClick={handleMapPress}
+                  cameraPosition={{
+                    coordinates: mapCoordinates!,
+                    zoom: 18,
+                  }}
+                  markers={[
+                    {
+                      coordinates: mapCoordinates!,
+                      title: 'Selected Location',
+                      id: 'selected',
+                    },
+                  ]}
+                  // showsUserLocation={false}
+                  // showsMyLocationButton={false}
+                  // options={{
+                  //   restriction: {
+                  //     latLngBounds: {
+                  //       north: 35.0, // Northern boundary of India
+                  //       south: 8.0,  // Southern boundary of India
+                  //       east: 97.0,  // Eastern boundary of India
+                  //       west: 68.0,  // Western boundary of India
+                  //     },
+                  //     strictBounds: true,
+                  //   },
+                  // }}
+                />
+              )}
+              
+              <TouchableOpacity 
+                style={styles.currentLocationBtn} 
+                onPress={getCurrentLocationOnMap}
+              >
+                <Ionicons name="locate" size={20} color="#fff" />
+              </TouchableOpacity>
+            </View>
+
+            {isLocationChanged && (
+              <TouchableOpacity 
+                style={[styles.confirmBtn, { backgroundColor: colors.BUTTON_BG }]} 
+                onPress={confirmLocation}
+              >
+                <Text style={[styles.confirmBtnText, { color: colors.BUTTON_TEXT }]}>Confirm Location</Text>
+              </TouchableOpacity>
+            )}
+
+            <TouchableOpacity 
+              style={styles.closeMapBtn} 
+              onPress={() => setIsMapModalVisible(false)}
+            >
+              <Ionicons name="close" size={24} color={colors.TEXT} />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
       <ScrollView 
         style={[styles.stepContainer]}
       >
@@ -342,7 +542,12 @@ const BasicInfoScreen : React.FC<BasicInfoProps> = ({ basicInfo, setBasicInfo })
 
 
         <View>
-          <Text style={styles.label}>Address</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10}}>
+            <Text style={styles.label}>Address</Text>
+            <TouchableOpacity onPress={openMapModal} style={styles.viewMapBtn}>
+              <Text style={[styles.viewMapBtnText, { color: colors.TINT }]}>View Map</Text>
+            </TouchableOpacity>
+          </View>
           <TouchableOpacity onPress={refetchCurrLocation} style={styles.fetchLocationBtn}>
             <Text style={[styles.fetchLocationBtnText, { color: colors.TINT }]}>{isLoading ? <ActivityIndicator color={"blue"} size={24}/> : "Get Current Location"}</Text>
           </TouchableOpacity>
@@ -387,6 +592,19 @@ const BasicInfoScreen : React.FC<BasicInfoProps> = ({ basicInfo, setBasicInfo })
             thumbColor={basicInfo.isUnderConstruction ? colors.TINT : '#f4f3f4'}
             onValueChange={handleIsUnderConstruction}
             value={basicInfo.isUnderConstruction}
+          />
+        </View>
+        <View style={styles.underConstructionBox}>
+          <Text style={[styles.label]}>Donation Required</Text>
+          <Switch
+            trackColor={{ false: '#767577', true: '#81b0ff' }}
+            thumbColor={basicInfo.donationRequired ? colors.TINT : '#f4f3f4'}
+            onValueChange={() => setBasicInfo((prev: BasicInfo) => ({
+              ...prev,
+              donationRequired: !prev.donationRequired
+          }))}
+            value={basicInfo.donationRequired}
+            disabled={basicInfo.isUnderConstruction}
           />
         </View>
 
@@ -545,7 +763,82 @@ const BasicInfoScreen : React.FC<BasicInfoProps> = ({ basicInfo, setBasicInfo })
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center'
-  }
+  },
+  viewMapBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  viewMapBtnText: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  mapModalContainer: {
+    width: '90%',
+    height: '70%',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+  },
+  mapModalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  mapInstruction: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  map: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 8,
+  },
+  mapContainer: {
+    width: '100%',
+    height: '75%',
+    position: 'relative',
+  },
+  currentLocationBtn: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    backgroundColor: '#007AFF',
+    borderRadius: 22,
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  confirmBtn: {
+    marginTop: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  confirmBtnText: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  closeMapBtn: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    padding: 8,
+  },
   });
   
 

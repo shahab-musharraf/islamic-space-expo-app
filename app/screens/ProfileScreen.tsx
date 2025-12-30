@@ -15,6 +15,7 @@ import React, { useEffect, useRef, useState } from 'react';
 
 import {
   ActivityIndicator,
+  Alert,
   Image,
   Linking,
   StyleSheet,
@@ -199,9 +200,25 @@ const ProfileScreen = () => {
   }
 }, [editingName]);
 
- const handleAddMasjid = () => {
+ const handleSupportUs = async () => {
+  const upiId = "shahabmusharrafhyd@okicici";
+  const name = "Support App";
+  const upiUrl = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(
+    name
+  )}&cu=INR`;
 
- }
+  const supported = await Linking.canOpenURL(upiUrl);
+
+  if (supported) {
+    Linking.openURL(upiUrl);
+  } else {
+    Alert.alert("UPI not available", "No UPI app found on this device");
+  }
+};
+
+  const handleAddMasjid = () => {
+    navigation.navigate('');
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -216,6 +233,11 @@ const ProfileScreen = () => {
 
       {/* Profile Card */}
       <View style={styles.profileCard}>
+        <View style={styles.logoutContainer}>
+        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+          {logoutLoader ? <ActivityIndicator size={14} color="#fff" style={{ width:35 }} /> : <Text style={styles.logoutText}>Logout</Text>}
+        </TouchableOpacity>
+      </View>
         <TouchableOpacity onPress={handlePickImage} disabled={isUploadingPreview} style={styles.avatarContainer}>
           {pickedImage || profile?.avatar ? (
             <Image source={{ uri: pickedImage || String(profile?.avatar || '') }} style={styles.avatar} />
@@ -315,16 +337,6 @@ const ProfileScreen = () => {
           <Feather name="chevron-right" size={24} color={colors.DISABLED_TEXT} />
         </TouchableOpacity>
 
-        {profile && String(profile.role || '').split(',').includes(roles.MASJID_SECRETARY) === false ? (
-          <TouchableOpacity style={styles.optionRow} onPress={handleAddMasjid}>
-            <View style={styles.iconTextContainer}>
-              <MasjidIcon name="mosque" size={20} color={colors.ICON} style={styles.icon} />
-              <Text style={{ ...styles.optionText, color: colors.TEXT }}>Add a Masjid</Text>
-            </View>
-            <Feather name="chevron-right" size={24} color={colors.DISABLED_TEXT} />
-          </TouchableOpacity>
-        ) : null}
-
         {profile && String(profile.role || '').split(',').includes(roles.MASJID_SECRETARY) ? (
           <TouchableOpacity style={styles.optionRow} onPress={handleMasjidPanelNavigation}>
             <View style={styles.iconTextContainer}>
@@ -362,25 +374,43 @@ const ProfileScreen = () => {
           </View>
           <Feather name="external-link" size={20} color={colors.DISABLED_TEXT} />
         </TouchableOpacity>
+
+
+        {profile && String(profile.role || '').split(',').includes(roles.MASJID_SECRETARY) === false && <TouchableOpacity style={styles.optionRow} onPress={handleAddMasjid}>
+          <View style={styles.iconTextContainer}>
+            <FontAwesome5 name="quran" size={20} color={colors.ICON} style={styles.icon} />
+            <Text style={{ ...styles.optionText, color: colors.TEXT }}>Add a Masjid</Text>
+          </View>
+          <Feather name="external-link" size={20} color={colors.DISABLED_TEXT} />
+        </TouchableOpacity>}
+
       </View>
 
-      {/* Message for Muazzin/Managers */}
-      {profile && !String(profile.role || '').split(',').includes(roles.MASJID_SECRETARY) && <View style={styles.messageContainer}>
-        <Text style={[styles.messageText, { color: colors.TEXT }]}>
-          If you are a muazzin or managing a masjid, please contact us to list the masjid on the app. This will help Muslims find it easily.
-        </Text>
-        <TouchableOpacity onPress={() => Linking.openURL('https://wa.me/7033043952')} style={styles.whatsappButton}>
-          <FontAwesome name="whatsapp" size={24} color="#25D366" />
-          <Text style={[styles.whatsappText, { color: colors.TEXT }]}>Contact via WhatsApp</Text>
-        </TouchableOpacity>
-      </View>}
 
-      {/* Logout Button at Bottom Center */}
-      <View style={styles.logoutContainer}>
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          {logoutLoader ? <ActivityIndicator size="small" color="#fff" style={{ marginLeft: 10 }} /> : <Text style={styles.logoutText}>Logout</Text>}
-        </TouchableOpacity>
-      </View>
+      <TouchableOpacity
+            style={[styles.optionRow, styles.supportRow]}
+            onPress={handleSupportUs}
+            activeOpacity={0.8}
+          >
+            <View style={styles.iconTextContainer}>
+              <FontAwesome5
+                name="hand-holding-heart"
+                size={20}
+                color={colors.primary}
+                style={styles.icon}
+              />
+              <View>
+                <Text style={[styles.optionText, { color: colors.TEXT }]}>
+                  Support Us
+                </Text>
+                <Text style={styles.subText}>
+                  Help us grow & maintain the platform
+                </Text>
+              </View>
+            </View>
+
+            <Feather name="chevron-right" size={22} color={colors.DISABLED_TEXT} />
+          </TouchableOpacity>
     </SafeAreaView>
   );
 };
@@ -395,6 +425,7 @@ const styles = StyleSheet.create({
   profileCard: {
     alignItems: 'center',
     marginTop: 10,
+    position:'relative'
   },
   toggleButton: {
     position: 'absolute',
@@ -453,8 +484,6 @@ cancelText: {
     marginTop: 5,
   },
   editIconBtn: {
-    marginLeft: 8,
-    padding: 6,
   },
 
   optionContainer: {
@@ -494,17 +523,19 @@ cancelText: {
     fontSize: 16,
   },
   logoutContainer: {
-    alignItems: 'center',
-    marginBottom: 30,
+    position:'absolute',
+    right:0,
+    top:0
+    // marginBottom: 30,
   },
   logoutButton: {
     backgroundColor: 'red',
-    paddingVertical: 15,
-    paddingHorizontal: 80,
-    borderRadius: 30,
+    paddingVertical: 5,
+    paddingHorizontal: 15,
+    borderRadius: 5,
   },
   logoutText: {
-    fontSize: 16,
+    fontSize: 13,
     fontWeight: 'bold',
     color: '#fff',
   },
@@ -515,6 +546,17 @@ cancelText: {
   },
   icon: {
     width: 35,
+  },
+  supportRow: {
+    backgroundColor: "rgba(76, 175, 80, 0.08)",
+    borderRadius: 12,
+    padding: 14
+  },
+
+  subText: {
+    fontSize: 12,
+    color: "#777",
+    marginTop: 2,
   },
 
   updateButton: {

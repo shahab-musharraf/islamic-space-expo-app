@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import mosqueRequest from "../_helpers/mosqueRequest";
 
-export const useGetBudgetNeededMasjids = (limit: string = "10", city: string = "India") => {
+export const useGetBudgetNeededMasjids = (limit: string = "30", city: string = "India") => {
   const queryKey = [
     "budgetNeededMasjids",
     limit,

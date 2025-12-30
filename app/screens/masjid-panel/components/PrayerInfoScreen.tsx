@@ -23,7 +23,7 @@ export const PRAYER_FIELDS: { key: keyof PrayerInfo; label: string; placeholder:
   { key: 'asr', label: 'Asr', placeholder: '04:30 PM', mandatory: true },
   { key: 'maghrib', label: 'Maghrib', placeholder: '06:40 PM', mandatory: true },
   { key: 'isha', label: 'Isha', placeholder: '08:00 PM', mandatory: true },
-  { key: 'jumuah', label: 'Jumuah', placeholder: '01:15 PM', mandatory: true },
+  { key: 'jumuah', label: 'Jumuah', placeholder: '01:15 PM', mandatory: false },
   { key: 'sehri', label: 'Sehri', placeholder: '05:30 AM', mandatory: false },
   { key: 'iftaar', label: 'Iftaar', placeholder: '06:40 PM', mandatory: false },
   { key: 'taraweeh', label: 'Taraweeh', placeholder: '08:00 PM', mandatory: false },

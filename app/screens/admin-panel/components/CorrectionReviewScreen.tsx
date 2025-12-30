@@ -37,7 +37,6 @@ const VerificationCard = ({ item, refetchMasjids }: { item: MasjidNeedCorrection
 
   const navigation: any = useNavigation();
   const verifyMasjidMutation = useVerifyMasjidMutation();
-  const [reason, setReason] = React.useState<string>('');
   const [isApproving, setIsApproving] = React.useState<boolean>(false);
   
   // Handlers for Admin actions (placeholder functions)
@@ -91,6 +90,16 @@ const VerificationCard = ({ item, refetchMasjids }: { item: MasjidNeedCorrection
       <View style={cardStyles.details}>
         <Text style={cardStyles.masjidName} numberOfLines={2}>
             {item.name}
+        </Text>
+        <Text style={cardStyles.reason}>
+          Reason: 
+        </Text>
+        <Text>
+          {
+            item.reason && item.reason.split('%').map((r, idx) => (
+              <Text key={r+idx} style={{color:'red'}}>{r}</Text>
+            ))
+          }
         </Text>
         <Text style={cardStyles.address} numberOfLines={2}>
             {item.address}
@@ -218,6 +227,9 @@ const cardStyles = StyleSheet.create({
     details: {
         flex: 1,
         justifyContent: 'space-between',
+    },
+    reason: {
+      color: 'red'
     },
     masjidName: {
         fontSize: 16,

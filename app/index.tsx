@@ -61,7 +61,7 @@ const Index = () => {
           console.log('trying refresh')
           const response = await axios.post(`${process.env.EXPO_PUBLIC_AUTH_SERVICE}/auth/refresh`, {
             refreshToken,
-          });
+          }, {timeout: 10000});
           
           const newAccessToken = response.data?.accessToken;
           const newRefreshToken = response.data?.refreshToken;

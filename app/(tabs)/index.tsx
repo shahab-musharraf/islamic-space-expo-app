@@ -143,7 +143,7 @@ const Home = () => {
     data: budgetNeededMasjids,
     isLoading: budgetNeededLoading,
     error: budgetNeededError,
-  } = useGetBudgetNeededMasjids("10", selectedCity);
+  } = useGetBudgetNeededMasjids("30", selectedCity);
 
   const { data: globalSearchData, isLoading: globalSearchLoading, error: globalSearchError } = useGlobalSearch(debouncedSearch);
 
@@ -225,7 +225,7 @@ const Home = () => {
   const handleUpdateLocation = async () => {
     setUpdateLocationLoading(true);
     await clearLocation();
-    await fetchLocation();
+    await fetchLocation(true);
     setUpdateLocationLoading(false);
     setIsModalVisible(false);
   };
@@ -596,7 +596,7 @@ const Home = () => {
                   <Text style={styles.modalBtnText}>Open Settings</Text>
                 </TouchableOpacity>
               )}
-              <TouchableOpacity style={styles.modalBtn} onPress={fetchLocation}>
+              <TouchableOpacity style={styles.modalBtn} onPress={() => { fetchLocation(true)   }}>
                 <Text style={styles.modalBtnText}>
                   {errorMsg === "Please enable GPS!" ? "Enable" : "Retry"}
                 </Text>
@@ -710,7 +710,7 @@ const styles = StyleSheet.create({
   },
   paddingContainer: {
     paddingHorizontal: 20,
-    paddingTop: 20,
+    paddingTop: 10,
     flex: 1,
   },
   locationContainer: {

@@ -45,6 +45,7 @@ export interface BasicInfo {
   isUnderConstruction: boolean;
   secretaryName: string;
   secretaryMobile: string;
+  donationRequired: boolean;
 }
 
 export interface BudgetInfo {
@@ -142,6 +143,18 @@ const getChangedFields = <T extends Record<string, any>>(currentInfo: T, fetched
 
 const STEP_COUNT = 4;
 
+const getTotalSteps = (basicInfo: BasicInfo) => {
+  let steps = 1; // BasicInfo always
+  if (basicInfo.donationRequired) {
+    steps += 1; // BudgetInfo
+    steps += 1; // PaymentInfo
+  }
+  if (!basicInfo.isUnderConstruction) {
+    steps += 1; // PrayerInfo
+  }
+  return steps;
+};
+
 const AddMasjidScreen: React.FC = ({params}: any) => {
   const route : any = useRoute();
   const navigation: any = useNavigation();
@@ -179,6 +192,7 @@ const AddMasjidScreen: React.FC = ({params}: any) => {
     isUnderConstruction: false,
     secretaryName: profile?.name || '',
     secretaryMobile: profile?.mobile || '',
+    donationRequired: true
   })
 
   const [budgetInfo, setBudgetInfo] = useState<BudgetInfo>({
@@ -207,6 +221,8 @@ const AddMasjidScreen: React.FC = ({params}: any) => {
     offlineCollectedAmount: '',
     startDate: null
   })
+
+  console.log(underConstructionBudgetInfo)
 
   const [prayerInfo, setPrayerInfo] = useState<PrayerInfo>({
     fajr: '',
@@ -239,7 +255,7 @@ const AddMasjidScreen: React.FC = ({params}: any) => {
 
   const onSubmit = async () => {
     // console.log(basicInfo, budgetInfo, underConstructionBudgetInfo, prayerInfo, paymentInfo, 'Data to be submitted!')
-        if(step === 4 && (
+        if(basicInfo.donationRequired && step === getTotalSteps(basicInfo) && (
           !paymentInfo.accountHolderName ||
           !paymentInfo.accountNumber ||
           !paymentInfo.branch ||
@@ -318,7 +334,7 @@ const AddMasjidScreen: React.FC = ({params}: any) => {
           return;
     }
     // console.log(basicInfo, budgetInfo, underConstructionBudgetInfo, prayerInfo, paymentInfo, 'Data to be submitted!')
-        if(step === 4 && (
+        if(basicInfo.donationRequired && step === getTotalSteps(basicInfo) && (
           !paymentInfo.accountHolderName ||
           !paymentInfo.accountNumber ||
           !paymentInfo.branch ||
@@ -385,6 +401,8 @@ const AddMasjidScreen: React.FC = ({params}: any) => {
       const newBudgetReport = budgetReport && !budgetReport.name.startsWith('islamic-space-existing-masjid-budgetreport') ? budgetReport : null;
 
       fd.append('isSecretary', isSecretary)
+
+      console.log(newBudgetReport, '$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$')
 
       if(Object.keys(changedBasicInfo).length){
         fd.append('masjidInfo', JSON.stringify(changedBasicInfo));
@@ -468,7 +486,8 @@ const AddMasjidScreen: React.FC = ({params}: any) => {
 
   // UI pieces
   const renderProgress = () => {
-    const widthPercent = (step / STEP_COUNT) * 100;
+    const totalSteps = getTotalSteps(basicInfo);
+    const widthPercent = (step / totalSteps) * 100;
     return (
       <View style={styles.progressWrap}>
         <View style={[styles.progressBarBg, {backgroundColor: colors.DISABLED_TEXT}]}>
@@ -476,9 +495,9 @@ const AddMasjidScreen: React.FC = ({params}: any) => {
         </View>
         <View style={styles.stepsRow}>
           <Text style={[styles.stepLabel, step === 1 && styles.stepActive]}>Basic</Text>
-          <Text style={[styles.stepLabel, step === 2 && styles.stepActive]}>Budget</Text>
-          {!basicInfo.isUnderConstruction && <Text style={[styles.stepLabel, step === 3 && styles.stepActive]}>Prayers</Text>}
-          <Text style={[styles.stepLabel, step === 4 && styles.stepActive]}>Payment</Text>
+          {basicInfo.donationRequired && <Text style={[styles.stepLabel, step === 2 && styles.stepActive]}>Budget</Text>}
+          {!basicInfo.isUnderConstruction && <Text style={[styles.stepLabel, step === (basicInfo.donationRequired ? 3 : 2) && styles.stepActive]}>Prayers</Text>}
+          {basicInfo.donationRequired && <Text style={[styles.stepLabel, step === (basicInfo.donationRequired ? (basicInfo.isUnderConstruction ? 3 : 4) : -1) && styles.stepActive]}>Payment</Text>}
         </View>
       </View>
     );
@@ -487,13 +506,13 @@ const AddMasjidScreen: React.FC = ({params}: any) => {
   const handleNextBtn = () => {
 
     if((step === 1 && (
-      !basicInfo.name ||
-      !basicInfo.address ||
-      !basicInfo.city ||
-      !basicInfo.state ||
-      !basicInfo.pincode ||
-      !basicInfo.latitude ||
-      !basicInfo.longitude ||
+      !basicInfo.name.trim() ||
+      !basicInfo.address.trim() ||
+      !basicInfo.city.trim() ||
+      !basicInfo.state.trim() ||
+      !basicInfo.pincode.trim() ||
+      !basicInfo.latitude.trim() ||
+      !basicInfo.longitude.trim() ||
       (!basicInfo.images.length) ||
       (!basicInfo.videos.length)
     )) ){
@@ -504,15 +523,15 @@ const AddMasjidScreen: React.FC = ({params}: any) => {
       return;
     }
 
-    if(step === 2 && !basicInfo.isUnderConstruction && (
-      !budgetInfo.electricityBill ||
-      !budgetInfo.maintenance ||
-      !budgetInfo.moazzinSalary ||
-      !budgetInfo.noOfMoazzins ||
-      !budgetInfo.noOfStaff ||
-      !budgetInfo.staffSalary ||
-      !budgetInfo.otherExpenses ||
-      !budgetInfo.waterBill
+    if(step === 2 && basicInfo.donationRequired && !basicInfo.isUnderConstruction && (
+      !budgetInfo.electricityBill.trim() ||
+      !budgetInfo.maintenance.trim() ||
+      !budgetInfo.moazzinSalary.trim() ||
+      !budgetInfo.noOfMoazzins.trim() ||
+      !budgetInfo.noOfStaff.trim() ||
+      !budgetInfo.staffSalary.trim() ||
+      !budgetInfo.otherExpenses.trim() ||
+      !budgetInfo.waterBill.trim()
     )){
       Alert.alert(
         "Incomplete Information",
@@ -521,10 +540,10 @@ const AddMasjidScreen: React.FC = ({params}: any) => {
       return;
     }
 
-    if(step === 2 && basicInfo.isUnderConstruction && (
+    if(step === 2 && basicInfo.donationRequired && basicInfo.isUnderConstruction && (
       !underConstructionBudgetInfo.budgetReport?.uri ||
-      !underConstructionBudgetInfo.estimatedBudget ||
-      !underConstructionBudgetInfo.offlineCollectedAmount ||
+      !underConstructionBudgetInfo.estimatedBudget.trim() ||
+      !underConstructionBudgetInfo.offlineCollectedAmount.trim() ||
       !underConstructionBudgetInfo.startDate ||
       !underConstructionBudgetInfo.expectedEndDate      
     )){
@@ -535,7 +554,7 @@ const AddMasjidScreen: React.FC = ({params}: any) => {
       return;
     }
 
-    if(step === 2 && basicInfo.isUnderConstruction && (Number(underConstructionBudgetInfo.offlineCollectedAmount) > Number(underConstructionBudgetInfo.estimatedBudget))){
+    if(step === 2 && basicInfo.donationRequired && basicInfo.isUnderConstruction && (Number(underConstructionBudgetInfo.offlineCollectedAmount) > Number(underConstructionBudgetInfo.estimatedBudget))){
       Alert.alert(
         "Alert",
         "Offline collected amount is greater than the target budget"
@@ -543,13 +562,12 @@ const AddMasjidScreen: React.FC = ({params}: any) => {
       return;
     }
 
-    if(step === 3 && (
+    if(step === (basicInfo.donationRequired ? 3 : 2) && !basicInfo.isUnderConstruction && (
       !prayerInfo.fajr ||
       !prayerInfo.dhuhr || 
       !prayerInfo.asr ||
       !prayerInfo.maghrib ||
-      !prayerInfo.isha ||
-      !prayerInfo.jumuah
+      !prayerInfo.isha
     )){
       Alert.alert(
         "Incomplete Information",
@@ -559,20 +577,20 @@ const AddMasjidScreen: React.FC = ({params}: any) => {
     }
 
 
-    if(basicInfo.isUnderConstruction && step === 2){
-      setStep((s) => Math.min(STEP_COUNT, s + 2));
+    if(basicInfo.isUnderConstruction && step === 2 && basicInfo.donationRequired){
+      setStep((s) => Math.min(getTotalSteps(basicInfo), s + 2));
     }
     else {
-      setStep((s) => Math.min(STEP_COUNT, s + 1));
+      setStep((s) => Math.min(getTotalSteps(basicInfo), s + 1));
     }
   }
 
   const handleGoBack = () => {
-    if(basicInfo.isUnderConstruction && step === 4){
-      setStep((s) => Math.min(STEP_COUNT, s - 2));
+    if(basicInfo.isUnderConstruction && step === getTotalSteps(basicInfo) && basicInfo.donationRequired){
+      setStep((s) => Math.max(1, s - 2));
     }
     else {
-      setStep((s) => Math.min(STEP_COUNT, s - 1));
+      setStep((s) => Math.max(1, s - 1));
     }
   }
 
@@ -602,6 +620,7 @@ const AddMasjidScreen: React.FC = ({params}: any) => {
         isUnderConstruction: fetchedMasjidData.isUnderConstruction,
         secretaryName: fetchedMasjidData.secretaryName,
         secretaryMobile: fetchedMasjidData.secretaryMobile,
+        donationRequired: fetchedMasjidData.donationRequired
       })
       setPrayerInfo(fetchedMasjidData.prayerInfo)
       setPaymentInfo({...fetchedMasjidData.accountInfo, qrCode: {
@@ -614,14 +633,19 @@ const AddMasjidScreen: React.FC = ({params}: any) => {
       // }
 
       // if(fetchedMasjidData.isUnderConstruction){
-      setUnderConstructionBudgetInfo({...fetchedMasjidData.underConstructionBudgetInfo, budgetReport: {
-          uri: fetchedMasjidData.underConstructionBudgetInfo.budgetReport,
-          name: `islamic-space-existing-masjid-budgetreport|${fetchedMasjidData.underConstructionBudgetInfo.budgetReport}`,
-          type: 'application/pdf',
-        },
-        expectedEndDate: new Date(fetchedMasjidData.underConstructionBudgetInfo.expectedEndDate),
-        startDate: new Date(fetchedMasjidData.underConstructionBudgetInfo.startDate),
-      })
+        setUnderConstructionBudgetInfo({...fetchedMasjidData.underConstructionBudgetInfo, 
+          budgetReport: !fetchedMasjidData.underConstructionBudgetInfo.budgetReport ? {
+            uri:'',
+            name:'',
+            type: ''
+          }: {
+            uri: fetchedMasjidData.underConstructionBudgetInfo.budgetReport,
+            name: `islamic-space-existing-masjid-budgetreport${Math.random()}.pdf`,
+            type: 'application/pdf',
+          },
+          expectedEndDate: fetchedMasjidData.underConstructionBudgetInfo.expectedEndDate ? new Date(fetchedMasjidData.underConstructionBudgetInfo.expectedEndDate) : '',
+          startDate: fetchedMasjidData.underConstructionBudgetInfo.startDate ? new Date(fetchedMasjidData.underConstructionBudgetInfo.startDate) : '',
+        })
       // }
     }
 
@@ -634,18 +658,18 @@ const AddMasjidScreen: React.FC = ({params}: any) => {
 
       <View style={styles.content}>
         {step === 1 && <BasicInfoScreen basicInfo = {basicInfo} setBasicInfo = {setBasicInfo} />}
-        {step === 2 && <BudegetInfoScreen budgetInfo={budgetInfo} setBudgetInfo={setBudgetInfo} 
+        {step === 2 && basicInfo.donationRequired && <BudegetInfoScreen budgetInfo={budgetInfo} setBudgetInfo={setBudgetInfo} 
                         isUnderConstruction ={basicInfo.isUnderConstruction} 
                         underConstructionBudgetInfo={underConstructionBudgetInfo}
                         setUnderConstructionBudgetInfo ={setUnderConstructionBudgetInfo}
         />}
-        {step === 3 && !basicInfo.isUnderConstruction && <PrayerInfoScreen prayerInfo={prayerInfo} setPrayerInfo={setPrayerInfo} />}
-        {step === 4  && <PaymentInfoScreen paymentInfo={paymentInfo} setPaymentInfo={setPaymentInfo} editable={isSecretary} />}
+        {step === (basicInfo.donationRequired ? 3 : 2) && !basicInfo.isUnderConstruction && <PrayerInfoScreen prayerInfo={prayerInfo} setPrayerInfo={setPrayerInfo} />}
+        {step === (basicInfo.donationRequired ? (basicInfo.isUnderConstruction ? 3 : 4) : -1) && basicInfo.donationRequired && <PaymentInfoScreen paymentInfo={paymentInfo} setPaymentInfo={setPaymentInfo} editable={isSecretary} />}
 
         <View style={{ flexDirection: 'row-reverse', gap: 8, height: 80, alignItems:'center' }}>
           
 
-          {step < STEP_COUNT ? (
+          {step < getTotalSteps(basicInfo) ? (
             <TouchableOpacity
               style={styles.btn}
               onPress={handleNextBtn}

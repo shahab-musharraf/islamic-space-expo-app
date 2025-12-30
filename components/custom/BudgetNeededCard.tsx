@@ -122,7 +122,7 @@ export const BudgetNeededCard: React.FC<BudgetNeededCardProps> = ({
       {/* Content */}
       <View style={styles.content}>
         <View style={styles.textContent}>
-          <Text style={[styles.name, { color: colors.TEXT }]} numberOfLines={2}>
+          <Text style={[styles.name, { color: colors.TEXT }]} numberOfLines={1}>
             {name}
           </Text>
           <Text style={[styles.address, { color: colors.TEXT + '80' }]} numberOfLines={1}>
@@ -261,7 +261,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 6,
     left: 6,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    backgroundColor: 'black',
     borderRadius: 20,
     padding: 4,
     zIndex: 10,
