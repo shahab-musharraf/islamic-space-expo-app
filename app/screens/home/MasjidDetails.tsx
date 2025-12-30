@@ -3,6 +3,7 @@ import { useAddMasjidToFavoriteMutation } from '@/apis/favoriteMosque/useAddMasj
 import { useRemoveMasjidFromFavoriteMutation } from '@/apis/favoriteMosque/useRemoveMasjidFromFavoriteMutation';
 import { useToggleFollowMajisMutation } from '@/apis/favoriteMosque/useToggleFollowMajisMutation';
 import { useGetMasjidDetailsByMasjidId } from '@/apis/masjid/useGetMasjidDetailsByMasjidId';
+import { useReportMasjidMutation } from '@/apis/masjid/useReportMasjidMutation';
 import MediaCarousel from '@/components/masjid-details/MediaCarousel';
 import { Theme } from '@/constants/types';
 import { useFavoriteMasjidStore } from '@/stores/useFavoriteMasjidStore';
@@ -10,8 +11,8 @@ import StarOutlineIcon from '@expo/vector-icons/Feather';
 import StarFilledIcon from '@expo/vector-icons/FontAwesome';
 import FollowingIcons from '@expo/vector-icons/Ionicons';
 import { useRoute, useTheme } from '@react-navigation/native';
-import React, { useState } from 'react';
-import { ActivityIndicator, Alert, Dimensions, Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, Dimensions, Keyboard, Linking, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import RazorpayCheckout from 'react-native-razorpay';
 import MasjidInfo from '../../../components/masjid-details/MasjidInfo';
 import Notifiations from '../../../components/masjid-details/Notifiations';
@@ -40,6 +41,23 @@ const MasjidDetails = () => {
     const { colors } = useTheme() as Theme;
     const [isPaymentLoading, setIsPaymentLoading] = useState(false);
     const [activeTab, setActiveTab] = useState(0);
+    const [reportModalVisible, setReportModalVisible] = useState(false);
+    const [reportReason, setReportReason] = useState('');
+    const [keyboardHeight, setKeyboardHeight] = useState(0);
+    const { mutate: reportMasjid, isPending: reportLoading } = useReportMasjidMutation();
+
+    useEffect(() => {
+      const showListener = Keyboard.addListener('keyboardWillShow', (e) => {
+        setKeyboardHeight(e.endCoordinates.height);
+      });
+      const hideListener = Keyboard.addListener('keyboardWillHide', () => {
+        setKeyboardHeight(0);
+      });
+      return () => {
+        showListener.remove();
+        hideListener.remove();
+      };
+    }, []);
     
     // Access the params passed during navigation
   const { _id, name, address,  } = route.params;
@@ -263,128 +281,201 @@ const MasjidDetails = () => {
   }
 
   return (
-    <View style={{ flex: 1 }}>
-      {/* {images && images.length > 0 && (
-        <Image source={{ uri: images[0] }} style={styles.image} />
-      )} */}
-      <View style={styles.mediaContainer}>
-        <MediaCarousel 
-          images = {data ? data.images : []}
-          videoUrl = {data && data.videos ? data.videos[0] : ''}
-        />
+    <React.Fragment>
+      <View style={{ flex: 1 }}>
+        {/* {images && images.length > 0 && (
+          <Image source={{ uri: images[0] }} style={styles.image} />
+        )} */}
+        <View style={styles.mediaContainer}>
+          <MediaCarousel 
+            images = {data ? data.images : []}
+            videoUrl = {data && data.videos ? data.videos[0] : ''}
+          />
 
-        {/* Overlay Icons */}
-        <View style={styles.overlayIconsContainer}>
-          {data?.isUnderConstruction && (
-            <View style={styles.constructionIcon}>
-              <FollowingIcons name="construct" size={20} color="#FFA500" />
-            </View>
-          )}
-          {data?.latitude && data?.longitude && (
-            <TouchableOpacity
-              style={styles.directionIcon}
-              onPress={handleDirectionsPress}
-            >
-              <FollowingIcons name="navigate" size={20} color="white" />
-            </TouchableOpacity>
-          )}
-        </View>
-
-        <View style={styles.actionContainer}>
-        {/* Follow Button */}
-        {isFavorite(_id) && <TouchableOpacity
-          onPress={handleToggleFollow}
-          activeOpacity={0.85}
-          style={[
-            styles.followButton,
-            isFollowing(_id) ? styles.following : styles.follow,
-          ]}
-          disabled={toggleFollowLoading}
-        >
-          <Text
-            style={[
-              styles.followText,
-              isFollowing(_id) ? styles.followingText : styles.followTextActive,
-            ]}
-          >
-            {
-              toggleFollowLoading ? <ActivityIndicator color={"black"} size={14}/> : isFollowing(_id) ? "Following" : "Follow"
-            }
-          </Text>
-        </TouchableOpacity>}
-
-        {/* Favorite Icon */}
-        <TouchableOpacity
-          onPress={isFavorite(_id) ? handleRemoveFromFavorite : handleAddToFavorite}
-          activeOpacity={0.85}
-          style={styles.favoriteIcon}
-          disabled={addMasjidToFavoriteLoading || removeMasjidFromFavoriteLoading}
-        >
-          {
-          addMasjidToFavoriteLoading || removeMasjidFromFavoriteLoading ? <ActivityIndicator color={"white"}  size={20}/> :
-          isFavorite(_id) ? (
-            <StarFilledIcon name="star" size={18} color="#FFD700" />
-          ) : (
-            <StarOutlineIcon name="star" size={18} color="#fff" />
-          )}
-        </TouchableOpacity>
-      </View>
-
-      </View>
-      
-
-         <View style={[styles.tabBarContainer, { borderBottomColor: colors.border }]}>
-            <TouchableOpacity
-              style={[styles.tab, activeTab === 0 && [styles.activeTab, { borderBottomColor: colors.BUTTON_BG }]]}
-              onPress={() => setActiveTab(0)}
-            >
-              <Text style={[styles.tabText, { color: colors.TEXT }, activeTab === 0 && [styles.activeTabText, { color: colors.TEXT }]]}>
-                Info
-              </Text>
-            </TouchableOpacity>
-            
-            {!data?.isUnderConstruction && (
+          {/* Overlay Icons */}
+          <View style={styles.overlayIconsContainer}>
+            {data?.isUnderConstruction && (
+              <View style={styles.constructionIcon}>
+                <FollowingIcons name="construct" size={20} color="#FFA500" />
+              </View>
+            )}
+            {data?.latitude && data?.longitude && (
               <TouchableOpacity
-                style={[styles.tab, activeTab === 1 && [styles.activeTab, { borderBottomColor: colors.BUTTON_BG }]]}
-                onPress={() => setActiveTab(1)}
+                style={styles.directionIcon}
+                onPress={handleDirectionsPress}
               >
-                <Text style={[styles.tabText, { color: colors.TEXT}, activeTab === 1 && [styles.activeTabText, { color: colors.TEXT }]]}>
-                  Prayer Timings
-                </Text>
+                <FollowingIcons name="navigate" size={20} color="white" />
               </TouchableOpacity>
             )}
-
-            <TouchableOpacity
-              style={[styles.tab, (data?.isUnderConstruction ? activeTab === 1 : activeTab === 2) && [styles.activeTab, { borderBottomColor: colors.BUTTON_BG }]]}
-              onPress={() => setActiveTab(data?.isUnderConstruction ? 1 : 2)}
-            >
-              <Text style={[styles.tabText, { color: colors.TEXT }, (data?.isUnderConstruction ? activeTab === 1 : activeTab === 2) && [styles.activeTabText, { color: colors.TEXT }]]}>
-                Notifications
-              </Text>
-            </TouchableOpacity>
           </View>
 
-          {
-            isLoading ? 
-       
-            <View style={styles.loaderContainer}>
-              <ActivityIndicator color={colors.TINT} size={50}/>
-            </View> :
-            !data ? 
-            <View style={styles.noDataFoundContainer}>
-              <Text style={{ color: 'red' }}>No data found</Text>
-            </View> :
-            <ScrollView
-              style={{ flex: 1 }}
-              contentContainerStyle={{ paddingBottom: 40 }}
-              showsVerticalScrollIndicator={false}
+          <View style={styles.actionContainer}>
+          {/* Follow Button */}
+          {isFavorite(_id) && <TouchableOpacity
+            onPress={handleToggleFollow}
+            activeOpacity={0.85}
+            style={[
+              styles.followButton,
+              isFollowing(_id) ? styles.following : styles.follow,
+            ]}
+            disabled={toggleFollowLoading}
+          >
+            <Text
+              style={[
+                styles.followText,
+                isFollowing(_id) ? styles.followingText : styles.followTextActive,
+              ]}
             >
-              {activeTab === 0 && <MasjidInfo masjid={data} />}
-              {activeTab === 1 && !data?.isUnderConstruction && <PrayerInfo prayerInfo={data?.prayerInfo} />}
-              {(data?.isUnderConstruction ? activeTab === 1 : activeTab === 2) && <Notifiations />}
-            </ScrollView>
-          }
-       </View>
+              {
+                toggleFollowLoading ? <ActivityIndicator color={"black"} size={14}/> : isFollowing(_id) ? "Following" : "Follow"
+              }
+            </Text>
+          </TouchableOpacity>}
+
+          {/* Favorite Icon */}
+          <TouchableOpacity
+            onPress={isFavorite(_id) ? handleRemoveFromFavorite : handleAddToFavorite}
+            activeOpacity={0.85}
+            style={styles.favoriteIcon}
+            disabled={addMasjidToFavoriteLoading || removeMasjidFromFavoriteLoading}
+          >
+            {
+            addMasjidToFavoriteLoading || removeMasjidFromFavoriteLoading ? <ActivityIndicator color={"white"}  size={20}/> :
+            isFavorite(_id) ? (
+              <StarFilledIcon name="star" size={18} color="#FFD700" />
+            ) : (
+              <StarOutlineIcon name="star" size={18} color="#fff" />
+            )}
+          </TouchableOpacity>
+        </View>
+
+        </View>
+        
+
+           <View style={[styles.tabBarContainer, { borderBottomColor: colors.border }]}>
+              <TouchableOpacity
+                style={[styles.tab, activeTab === 0 && [styles.activeTab, { borderBottomColor: colors.BUTTON_BG }]]}
+                onPress={() => setActiveTab(0)}
+              >
+                <Text style={[styles.tabText, { color: colors.TEXT }, activeTab === 0 && [styles.activeTabText, { color: colors.TEXT }]]}>
+                  Info
+                </Text>
+              </TouchableOpacity>
+              
+              {!data?.isUnderConstruction && (
+                <TouchableOpacity
+                  style={[styles.tab, activeTab === 1 && [styles.activeTab, { borderBottomColor: colors.BUTTON_BG }]]}
+                  onPress={() => setActiveTab(1)}
+                >
+                  <Text style={[styles.tabText, { color: colors.TEXT}, activeTab === 1 && [styles.activeTabText, { color: colors.TEXT }]]}>
+                    Prayer Timings
+                  </Text>
+                </TouchableOpacity>
+              )}
+
+              <TouchableOpacity
+                style={[styles.tab, (data?.isUnderConstruction ? activeTab === 1 : activeTab === 2) && [styles.activeTab, { borderBottomColor: colors.BUTTON_BG }]]}
+                onPress={() => setActiveTab(data?.isUnderConstruction ? 1 : 2)}
+              >
+                <Text style={[styles.tabText, { color: colors.TEXT }, (data?.isUnderConstruction ? activeTab === 1 : activeTab === 2) && [styles.activeTabText, { color: colors.TEXT }]]}>
+                  Notifications
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {
+              isLoading ? 
+         
+              <View style={styles.loaderContainer}>
+                <ActivityIndicator color={colors.TINT} size={50}/>
+              </View> :
+              !data ? 
+              <View style={styles.noDataFoundContainer}>
+                <Text style={{ color: 'red' }}>No data found</Text>
+              </View> :
+              <ScrollView
+                style={{ flex: 1 }}
+                contentContainerStyle={{ paddingBottom: 40 }}
+                showsVerticalScrollIndicator={false}
+              >
+                {activeTab === 0 && <MasjidInfo masjid={data} />}
+                {activeTab === 1 && !data?.isUnderConstruction && <PrayerInfo prayerInfo={data?.prayerInfo} />}
+                {(data?.isUnderConstruction ? activeTab === 1 : activeTab === 2) && <Notifiations />}
+                
+                <View style={styles.reportContainer}>
+                  <TouchableOpacity
+                    style={styles.reportButton}
+                    onPress={() => setReportModalVisible(true)}
+                  >
+                    <Text style={styles.reportButtonText}>Report Masjid</Text>
+                  </TouchableOpacity>
+                </View>
+              </ScrollView>
+            }
+         </View>
+
+         <Modal
+           visible={reportModalVisible}
+           transparent
+           animationType="fade"
+           onRequestClose={() => {
+             setReportModalVisible(false);
+             setReportReason('');
+           }}
+         >
+           <View style={styles.modalOverlay}>
+             <View style={[styles.modalContent, { marginBottom: keyboardHeight }]}>
+               <Text style={styles.modalTitle}>Report Masjid</Text>
+               <TextInput
+                 style={styles.textInput}
+                 placeholder="Describe the reason for reporting (at least 10 characters)"
+                 value={reportReason}
+                 onChangeText={setReportReason}
+                 multiline
+                 numberOfLines={4}
+               />
+               <View style={styles.modalButtons}>
+                 <TouchableOpacity
+                   onPress={() => {
+                     setReportModalVisible(false);
+                     setReportReason('');
+                   }}
+                 >
+                   <Text style={styles.cancelButton}>Cancel</Text>
+                 </TouchableOpacity>
+                 <TouchableOpacity
+                   onPress={() => {
+                     if (reportReason.length >= 10 && !reportLoading) {
+                       reportMasjid(
+                         { masjidId: _id, reason: reportReason },
+                         {
+                           onSuccess: () => {
+                             Alert.alert('Reported', 'Thank you for reporting.');
+                             setReportModalVisible(false);
+                             setReportReason('');
+                           },
+                           onError: () => {
+                             Alert.alert('Error', 'Failed to report. Please try again.');
+                           }
+                         }
+                       );
+                     }
+                   }}
+                   disabled={reportReason.length < 10 || reportLoading}
+                   style={[
+                     styles.submitButton,
+                     (reportReason.length < 10 || reportLoading) && styles.disabledButton
+                   ]}
+                 >
+                   <Text style={styles.submitButtonText}>
+                     {reportLoading ? 'Reporting...' : 'Report'}
+                   </Text>
+                 </TouchableOpacity>
+               </View>
+             </View>
+           </View>
+         </Modal>
+    </React.Fragment>
   )
 }
 
@@ -561,6 +652,71 @@ favoriteIcon: {
       backgroundColor: 'rgba(0, 0, 0, 1)',
       alignItems: 'center',
       justifyContent: 'center',
+    },
+    reportContainer: {
+      padding: 16,
+      alignItems: 'center',
+    },
+    reportButton: {
+      backgroundColor: '#f44336',
+      paddingHorizontal: 20,
+      paddingVertical: 10,
+      borderRadius: 5,
+    },
+    reportButtonText: {
+      color: 'white',
+      fontSize: 16,
+      fontWeight: 'bold',
+    },
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    modalContent: {
+      backgroundColor: 'white',
+      padding: 20,
+      borderRadius: 10,
+      width: '80%',
+      maxWidth: 400,
+    },
+    modalTitle: {
+      fontSize: 18,
+      fontWeight: 'bold',
+      marginBottom: 10,
+      textAlign: 'center',
+    },
+    textInput: {
+      borderWidth: 1,
+      borderColor: '#ccc',
+      borderRadius: 5,
+      padding: 10,
+      minHeight: 80,
+      textAlignVertical: 'top',
+    },
+    modalButtons: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginTop: 20,
+    },
+    cancelButton: {
+      color: '#666',
+      fontSize: 16,
+    },
+    submitButton: {
+      backgroundColor: '#f44336',
+      paddingHorizontal: 20,
+      paddingVertical: 10,
+      borderRadius: 5,
+    },
+    submitButtonText: {
+      color: 'white',
+      fontSize: 16,
+      fontWeight: 'bold',
+    },
+    disabledButton: {
+      backgroundColor: '#ccc',
     },
   })
 

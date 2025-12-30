@@ -2,6 +2,7 @@ import { useGetAllFavoriteMosque } from "@/apis/favoriteMosque/useGetAllFavorite
 import { useGetAllNearbyMasjids } from "@/apis/masjid/useGetAllMasjids";
 import { useGetBudgetNeededMasjids } from "@/apis/masjid/useGetBudgetNeededMasjids";
 import { useGlobalSearch } from "@/apis/masjid/useGlobalSearch";
+import { useGetAllPlaces } from "@/apis/place/useGetAllPlaces";
 import { BudgetNeededCard } from "@/components/custom/BudgetNeededCard";
 import { MasjidCard } from "@/components/custom/MasjidCard";
 import FilterSortModal from "@/components/global/FilterSortModal";
@@ -146,6 +147,7 @@ const Home = () => {
   } = useGetBudgetNeededMasjids("30", selectedCity);
 
   const { data: globalSearchData, isLoading: globalSearchLoading, error: globalSearchError } = useGlobalSearch(debouncedSearch);
+  const { data: allPlaces, isLoading: allPlacesLoading, isError: allPlacesError, refetch: refetchAllPlaces } = useGetAllPlaces();
 
   // Debounce search value
   useEffect(() => {
@@ -411,23 +413,59 @@ const Home = () => {
                     </TouchableOpacity>
                     {cityDropdownVisible && (
                       <View style={[styles.cityDropdownMenu, { backgroundColor: colors.CARD, borderColor: colors.text + '20' }]}>
-                        {["India", "Hyderabad"].map((city) => (
-                          <TouchableOpacity
-                            key={city}
-                            style={styles.cityDropdownItem}
-                            onPress={() => {
-                              setSelectedCity(city);
-                              setCityDropdownVisible(false);
-                            }}
-                          >
-                            <Text style={[styles.cityDropdownItemText, { color: colors.text }]}>
-                              {city}
-                            </Text>
-                            {selectedCity === city && (
-                              <Ionicons name="checkmark" size={16} color={colors.text} />
-                            )}
-                          </TouchableOpacity>
-                        ))}
+                        {
+
+                          allPlacesLoading ? (
+                          <View style={styles.centered}>
+                            <ActivityIndicator size="small" color={colors.TINT} />
+                          </View>
+                        ) : allPlacesError ? (
+                          <View style={styles.centered}>
+                            <Text style={[styles.message, { color: colors.TEXT }]}>Failed to load places</Text>
+                          </View>
+                        ) :
+
+                        <>
+
+                        <TouchableOpacity
+                                key={'India'}
+                                style={styles.cityDropdownItem}
+                                onPress={() => {
+                                  setSelectedCity('India');
+                                  setCityDropdownVisible(false);
+                                }}
+                              >
+                                <Text style={[styles.cityDropdownItemText, { color: colors.text }]}>
+                                  {'India'}
+                                </Text>
+                                {selectedCity === 'India' && (
+                                  <Ionicons name="checkmark" size={16} color={colors.text} />
+                                )}
+                              </TouchableOpacity>
+                        
+                          {
+                            allPlaces.map((city:string) => (
+                              <TouchableOpacity
+                                key={city}
+                                style={styles.cityDropdownItem}
+                                onPress={() => {
+                                  setSelectedCity(city.split(',')[0]);
+                                  setCityDropdownVisible(false);
+                                }}
+                              >
+                                <Text style={[styles.cityDropdownItemText, { color: colors.text }]}>
+                                  {city}
+                                </Text>
+                                {selectedCity === city && (
+                                  <Ionicons name="checkmark" size={16} color={colors.text} />
+                                )}
+                              </TouchableOpacity>
+                            ))
+                          }
+                        
+                        </>
+                        
+                        }
                       </View>
                     )}
                   </View>
@@ -810,6 +848,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 4,
+    maxHeight: 200,
   },
   cityDropdownItem: {
     flexDirection: 'row',
