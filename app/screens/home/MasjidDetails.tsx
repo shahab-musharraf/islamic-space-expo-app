@@ -402,14 +402,15 @@ const MasjidDetails = () => {
                 {activeTab === 1 && !data?.isUnderConstruction && <PrayerInfo prayerInfo={data?.prayerInfo} />}
                 {(data?.isUnderConstruction ? activeTab === 1 : activeTab === 2) && <Notifiations />}
                 
-                <View style={styles.reportContainer}>
+                {activeTab === 0 && <View style={styles.reportContainer}>
                   <TouchableOpacity
                     style={styles.reportButton}
                     onPress={() => setReportModalVisible(true)}
                   >
-                    <Text style={styles.reportButtonText}>Report Masjid</Text>
+                    <FollowingIcons name="flag" size={18} color="white" style={styles.reportIcon} />
+                    <Text style={styles.reportButtonText}>Report Issue</Text>
                   </TouchableOpacity>
-                </View>
+                </View>}
               </ScrollView>
             }
          </View>
@@ -658,15 +659,27 @@ favoriteIcon: {
       alignItems: 'center',
     },
     reportButton: {
-      backgroundColor: '#f44336',
-      paddingHorizontal: 20,
-      paddingVertical: 10,
-      borderRadius: 5,
+      backgroundColor: '#dc3545', // Slightly darker red for professionalism
+      paddingHorizontal: 24,
+      paddingVertical: 12,
+      borderRadius: 25, // More rounded for modern look
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      elevation: 3, // Shadow for depth
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      minWidth: 150,
+    },
+    reportIcon: {
+      marginRight: 8,
     },
     reportButtonText: {
       color: 'white',
       fontSize: 16,
-      fontWeight: 'bold',
+      fontWeight: '600', // Semi-bold instead of bold
     },
     modalOverlay: {
       flex: 1,

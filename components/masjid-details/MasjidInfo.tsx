@@ -12,6 +12,7 @@ import {
   Alert,
   Image,
   Linking,
+  Modal,
   ScrollView,
   StyleSheet,
   Text,
@@ -63,6 +64,8 @@ const Row = ({
 
 const MasjidInfo = ({ masjid }: { masjid: any }) => {
   const [showBreakup, setShowBreakup] = useState(false);
+  const [qrModalVisible, setQrModalVisible] = useState(false);
+  const [selectedQrUri, setSelectedQrUri] = useState('');
   const { colors } = useTheme() as Theme;
   const { profile } = useUserProfileStore();
 
@@ -270,11 +273,18 @@ const MasjidInfo = ({ masjid }: { masjid: any }) => {
           <Text style={[styles.qrTitle, { color: colors.TEXT }]}>
             Scan to Donate
           </Text>
-          <Image
-            source={{ uri: masjid.accountInfo.qrCode }}
-            style={styles.qrImage}
-            resizeMode="contain"
-          />
+          <TouchableOpacity
+            onPress={() => {
+              setSelectedQrUri(masjid.accountInfo.qrCode);
+              setQrModalVisible(true);
+            }}
+          >
+            <Image
+              source={{ uri: masjid.accountInfo.qrCode }}
+              style={styles.qrImage}
+              resizeMode="contain"
+            />
+          </TouchableOpacity>
         </View>
       )}
 
@@ -342,7 +352,31 @@ const MasjidInfo = ({ masjid }: { masjid: any }) => {
         </View>
       )}
 
+    {/* QR Code Modal */}
+    <Modal
+      visible={qrModalVisible}
+      transparent
+      animationType="fade"
+      onRequestClose={() => setQrModalVisible(false)}
+    >
+      <View style={styles.modalBackdrop}>
+        <View style={styles.modalContent}>
+          <TouchableOpacity
+            style={styles.closeButton}
+            onPress={() => setQrModalVisible(false)}
+          >
+            <Text style={styles.closeText}>✕</Text>
+          </TouchableOpacity>
+          <Image
+            source={{ uri: selectedQrUri }}
+            style={styles.fullImage}
+            resizeMode="contain"
+          />
+        </View>
+      </View>
+    </Modal>
     </ScrollView>
+
   );
 };
 
@@ -446,6 +480,33 @@ const styles = StyleSheet.create({
 
   qrTitle: { fontSize: 17, fontWeight: '600', marginBottom: 12 },
   qrImage: { width: 220, height: 220 },
+
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '90%',
+    height: '70%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    zIndex: 1,
+  },
+  closeText: {
+    fontSize: 24,
+    color: 'white',
+  },
+  fullImage: {
+    width: '100%',
+    height: '100%',
+  },
 
   reportBtn: {
     marginTop: 16,

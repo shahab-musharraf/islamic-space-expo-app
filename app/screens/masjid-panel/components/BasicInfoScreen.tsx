@@ -660,7 +660,7 @@ const BasicInfoScreen : React.FC<BasicInfoProps> = ({ basicInfo, setBasicInfo })
             <Text style={{ color: colors.DISABLED_TEXT}}>{'(pdf format)'}</Text>
           </Text>
           {/* show view existing button with space between if cam for update */}
-          {basicInfo.letterPad.uri && basicInfo.letterPad.name.includes('islamic-space') && <Pressable style={[{backgroundColor: 'colors.DISABLED_INPUT_BG', paddingVertical: 4, paddingHorizontal: 8, borderRadius: 4}]} 
+          {basicInfo.letterPad.uri && basicInfo.letterPad.name.includes('islamic-space-existing-masjid-letterpad') && <Pressable style={[{backgroundColor: 'colors.DISABLED_INPUT_BG', paddingVertical: 4, paddingHorizontal: 8, borderRadius: 4}]} 
             onPress={() => {
               if(basicInfo.letterPad && basicInfo.letterPad.uri){
                 // open pdf file

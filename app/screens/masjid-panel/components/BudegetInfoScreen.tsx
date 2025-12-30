@@ -1,9 +1,10 @@
 import { Theme } from '@/constants/types';
+import { showMessage } from '@/utils/functions';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useTheme } from '@react-navigation/native';
 import * as DocumentPicker from 'expo-document-picker';
 import React, { useState } from 'react';
-import { Platform, Pressable, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Linking, Platform, Pressable, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { BudgetInfo, UnderConstructionBudgetInfo } from '../AddMasjidScreen';
 
@@ -224,6 +225,19 @@ const handleSelectPdf = async () => {
 
             {/* 👇 4. Replace your TextInput with this */}
             <Text style={styles.label}>Upload Budget Report <Text style={{ color: colors.DISABLED_TEXT}}>{'(pdf format)'}</Text></Text>
+
+            {underConstructionBudgetInfo?.budgetReport?.uri && underConstructionBudgetInfo.budgetReport.name.includes('islamic-space-existing-masjid-budgetreport') && <Pressable style={[{backgroundColor: 'colors.DISABLED_INPUT_BG', paddingVertical: 4, paddingHorizontal: 8, borderRadius: 4}]} 
+                        onPress={() => {
+                          if(underConstructionBudgetInfo.budgetReport && underConstructionBudgetInfo.budgetReport.uri){
+                            // open pdf file
+                            Linking.openURL(underConstructionBudgetInfo.budgetReport.uri);
+                          } else {
+                            showMessage("No existing budget report found");
+                          }}}>
+                      <Text style={[styles.fileName, { color: colors.TINT }]}>
+                        {'View Existing'}
+                      </Text>
+                    </Pressable>}
             
             <Pressable style={[styles.fileInput, {backgroundColor: 'colors.DISABLED_INPUT_BG'}]} onPress={handleSelectPdf}>
               <Text style={underConstructionBudgetInfo.budgetReport ? styles.fileName : styles.placeholder}>

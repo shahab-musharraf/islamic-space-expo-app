@@ -5,7 +5,10 @@ import {
   Dimensions,
   FlatList,
   Image,
+  Modal,
   StyleSheet,
+  Text,
+  TouchableOpacity,
   View,
   ViewToken
 } from 'react-native';
@@ -36,6 +39,8 @@ const MediaCarousel: React.FC<MediaCarouselProps> = ({
 }) => {
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [imageModalVisible, setImageModalVisible] = useState(false);
+  const [selectedImageUri, setSelectedImageUri] = useState('');
 
   const { colors } = useTheme() as Theme;
 
@@ -85,11 +90,19 @@ const MediaCarousel: React.FC<MediaCarouselProps> = ({
     if (item.type === 'image') {
       return (
         <View style={styles.itemContainer}>
-          <Image
-            source={{ uri: item.uri }}
-            style={styles.media}
-            resizeMode="cover"
-          />
+          <TouchableOpacity
+            style={styles.mediaTouchable}
+            onPress={() => {
+              setSelectedImageUri(item.uri);
+              setImageModalVisible(true);
+            }}
+          >
+            <Image
+              source={{ uri: item.uri }}
+              style={styles.media}
+              resizeMode="cover"
+            />
+          </TouchableOpacity>
         </View>
       );
     }
@@ -151,6 +164,30 @@ const MediaCarousel: React.FC<MediaCarouselProps> = ({
           </View>
         </>
       )}
+
+      {/* Full Image Modal */}
+      <Modal
+        visible={imageModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setImageModalVisible(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalContent}>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => setImageModalVisible(false)}
+            >
+              <Text style={styles.closeText}>✕</Text>
+            </TouchableOpacity>
+            <Image
+              source={{ uri: selectedImageUri }}
+              style={styles.fullImage}
+              resizeMode="contain"
+            />
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -175,6 +212,10 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 15,
     borderBottomRightRadius: 15
   },
+  mediaTouchable: {
+    width: '100%',
+    height: '100%',
+  },
   // --- Pagination Styles ---
   paginationContainer: {
     flexDirection: 'row',
@@ -193,6 +234,32 @@ const styles = StyleSheet.create({
   },
    controlsContainer: {
     padding: 10,
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '90%',
+    height: '70%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    zIndex: 1,
+  },
+  closeText: {
+    fontSize: 24,
+    color: 'white',
+  },
+  fullImage: {
+    width: '100%',
+    height: '100%',
   },
 });
 
