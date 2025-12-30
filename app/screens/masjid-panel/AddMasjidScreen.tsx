@@ -626,12 +626,12 @@ const AddMasjidScreen: React.FC = ({params}: any) => {
         longitude: fetchedMasjidData.longitude.toString(),
         images: fetchedMasjidData?.images?.map((image : string, idx: number) => ({
           uri: image,
-          name: `islamic-space-existing-masjid-image-${idx+1}|${image}`,
+          name: `islamic-space-existing-masjid-image-${idx+1}`,
           type: 'image',
         })) || [],
         videos: fetchedMasjidData?.videos?.map((video : string, idx: number) => ({
           uri: video,
-          name: `islamic-space-existing-masjid-video-${idx+1}|${video}`,
+          name: `islamic-space-existing-masjid-video-${idx+1}`,
           type: 'video',
         })) || [],
         isUnderConstruction: fetchedMasjidData.isUnderConstruction,
@@ -640,14 +640,14 @@ const AddMasjidScreen: React.FC = ({params}: any) => {
         donationRequired: fetchedMasjidData.donationRequired,
         letterPad: { 
           uri: fetchedMasjidData.letterPad,
-          name: `islamic-space-existing-masjid-letterpad|${fetchedMasjidData.letterPad}`,
+          name: `islamic-space-existing-masjid-letterpad${Math.random()}.pdf`,
           type: 'image',
         }
       })
       setPrayerInfo(fetchedMasjidData.prayerInfo)
       setPaymentInfo({...fetchedMasjidData.accountInfo, qrCode: {
         uri: fetchedMasjidData.accountInfo.qrCode,
-        name: `islamic-space-existing-masjid-qrcode|${fetchedMasjidData.accountInfo.qrCode}`,
+        name: `islamic-space-existing-masjid-qrcode${Math.random()}`,
         type: 'image',
       }})
       // if(!fetchedMasjidData.isUnderConstruction){

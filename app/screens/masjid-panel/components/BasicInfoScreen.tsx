@@ -12,7 +12,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { AppleMaps, Coordinates, GoogleMaps } from 'expo-maps';
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, FlatList, Modal, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, FlatList, Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { Asset, BasicInfo } from "../AddMasjidScreen";
 
@@ -655,7 +655,24 @@ const BasicInfoScreen : React.FC<BasicInfoProps> = ({ basicInfo, setBasicInfo })
         </View>
 
 
-        <Text style={styles.label}>Upload Letter Pad <Text style={{ color: colors.DISABLED_TEXT}}>{'(pdf format)'}</Text></Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Text style={styles.label}>Upload Letter Pad 
+            <Text style={{ color: colors.DISABLED_TEXT}}>{'(pdf format)'}</Text>
+          </Text>
+          {/* show view existing button with space between if cam for update */}
+          {basicInfo.letterPad.uri && basicInfo.letterPad.name.includes('islamic-space') && <Pressable style={[{backgroundColor: 'colors.DISABLED_INPUT_BG', paddingVertical: 4, paddingHorizontal: 8, borderRadius: 4}]} 
+            onPress={() => {
+              if(basicInfo.letterPad && basicInfo.letterPad.uri){
+                // open pdf file
+                Linking.openURL(basicInfo.letterPad.uri);
+              } else {
+                showMessage("No existing letter pad found");
+              }}}>
+          <Text style={[styles.fileName, { color: colors.TINT }]}>
+            {'View Existing'}
+          </Text>
+        </Pressable>}
+        </View>
                     
         <Pressable style={[styles.fileInput, {backgroundColor: 'colors.DISABLED_INPUT_BG'}]} onPress={handleSelectPdf}>
           <Text style={basicInfo.letterPad ? styles.fileName : styles.placeholder}>

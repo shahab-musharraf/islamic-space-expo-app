@@ -1,4 +1,5 @@
 import { Theme } from '@/constants/types';
+import { useUserProfileStore } from '@/stores/userProfileStore';
 import { useTheme } from '@react-navigation/native';
 // import * as Clipboard from 'expo-clipboard';
 import Feather from '@expo/vector-icons/Feather';
@@ -6,6 +7,7 @@ import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 import FollowingIcons from '@expo/vector-icons/Ionicons';
 import React, { useState } from 'react';
 
+import { roles } from '@/constants/roles';
 import {
   Alert,
   Image,
@@ -62,6 +64,7 @@ const Row = ({
 const MasjidInfo = ({ masjid }: { masjid: any }) => {
   const [showBreakup, setShowBreakup] = useState(false);
   const { colors } = useTheme() as Theme;
+  const { profile } = useUserProfileStore();
 
   if (!masjid) return null;
 
@@ -276,6 +279,69 @@ const MasjidInfo = ({ masjid }: { masjid: any }) => {
       )}
 
 
+      {/* Admin/ Secretary Block */}
+      {profile && profile.role && profile.role.split(',').some((r: string) => [roles.ADMIN, roles.MASJID_SECRETARY, roles.SUPER_ADMIN].includes(r.trim())) && (
+        <View style={[styles.card, { backgroundColor: colors.CARD, marginTop: 16 }]}>
+          <Text style={[styles.qrTitle, { color: colors.TEXT, textAlign: 'center' }]}>Administrative Details</Text>
+          
+          {masjid.letterPad && (
+            <View style={{ marginBottom: 12, flexDirection: 'row', alignItems: 'center', justifyContent:'space-between', gap: 10 }}>
+              <Text style={[ { color: colors.TEXT }]}>Letter Pad:</Text>
+              <TouchableOpacity onPress={() => Linking.openURL(masjid.letterPad)}>
+                <Text style={[styles.link, { color: 'blue' }]}>View PDF</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          <Row label="Status:" value={masjid.status} textColor={colors.TEXT} />
+          <Row label="Verified By:" value={masjid.verifiedBy} textColor={colors.TEXT} />
+          <Row label="Verified At:" value={masjid.verifiedAt ? new Date(masjid.verifiedAt).toLocaleString() : ''} textColor={colors.TEXT} />
+          <Row label="Update Status:" value={masjid.updateStatus} textColor={colors.TEXT} />
+          <Row label="Reason:" value={masjid.reason} textColor={colors.TEXT} />
+
+          {/* Budget Details */}
+          {masjid.budgetInfo && (
+            <View style={{ marginTop: 12 }}>
+              <Text style={[ { color: colors.TEXT }]}>Budget Info</Text>
+              <Row label="Moazzin Salary:" value={`₹${masjid.budgetInfo.moazzinSalary}`} textColor={colors.TEXT} />
+              <Row label="Staff Salary:" value={`₹${masjid.budgetInfo.staffSalary}`} textColor={colors.TEXT} />
+              <Row label="Electricity Bill:" value={`₹${masjid.budgetInfo.electricityBill}`} textColor={colors.TEXT} />
+              <Row label="Water Bill:" value={`₹${masjid.budgetInfo.waterBill}`} textColor={colors.TEXT} />
+              <Row label="Maintenance:" value={`₹${masjid.budgetInfo.maintenance}`} textColor={colors.TEXT} />
+              <Row label="Other Expenses:" value={`₹${masjid.budgetInfo.otherExpenses}`} textColor={colors.TEXT} />
+              <Row label="No. of Moazzins:" value={masjid.budgetInfo.noOfMoazzins} textColor={colors.TEXT} />
+              <Row label="No. of Staff:" value={masjid.budgetInfo.noOfStaff} textColor={colors.TEXT} />
+              <Row label="Offline Collected:" value={`₹${masjid.budgetInfo.offlineCollectedAmount}`} textColor={colors.TEXT} />
+              <Row label="Total Required:" value={`₹${masjid.budgetInfo.totalBudgetRequired}`} textColor={colors.TEXT} />
+            </View>
+          )}
+
+          {/* Account Info */}
+          {masjid.accountInfo && (
+            <View style={{ marginTop: 12 }}>
+              <Text style={[styles.sectionTitle, { color: colors.TEXT }]}>Account Info</Text>
+              <Row label="Holder Name:" value={masjid.accountInfo.accountHolderName} textColor={colors.TEXT} />
+              <Row label="Account Number:" value={masjid.accountInfo.accountNumber} textColor={colors.TEXT} />
+              <Row label="IFSC Code:" value={masjid.accountInfo.ifscCode} textColor={colors.TEXT} />
+              <Row label="Branch:" value={masjid.accountInfo.branch} textColor={colors.TEXT} />
+              <Row label="UPI ID:" value={masjid.accountInfo.upiId} textColor={colors.TEXT} />
+            </View>
+          )}
+
+          {/* Construction Info */}
+          {masjid.isUnderConstruction && masjid.underConstructionBudgetInfo && (
+            <View style={{ marginTop: 12 }}>
+              <Text style={[styles.sectionTitle, { color: colors.TEXT }]}>Construction Info</Text>
+              <Row label="Estimated Budget:" value={`₹${masjid.underConstructionBudgetInfo.estimatedBudget}`} textColor={colors.TEXT} />
+              <Row label="Offline Collected:" value={`₹${masjid.underConstructionBudgetInfo.offlineCollectedAmount}`} textColor={colors.TEXT} />
+              <Row label="Start Date:" value={masjid.underConstructionBudgetInfo.startDate ? new Date(masjid.underConstructionBudgetInfo.startDate).toLocaleDateString() : ''} textColor={colors.TEXT} />
+              <Row label="Expected End Date:" value={masjid.underConstructionBudgetInfo.expectedEndDate ? new Date(masjid.underConstructionBudgetInfo.expectedEndDate).toLocaleDateString() : ''} textColor={colors.TEXT} />
+              <Row label="Registered Company:" value={masjid.underConstructionBudgetInfo.constructingByRegisteredCompany ? 'Yes' : 'No'} textColor={colors.TEXT} />
+            </View>
+          )}
+        </View>
+      )}
+
     </ScrollView>
   );
 };
@@ -323,6 +389,8 @@ const styles = StyleSheet.create({
 
   breakupBtn: { marginTop: 14 },
   breakupText: { fontSize: 15, fontWeight: '600' },
+  sectionTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 8 },
+  link: { fontSize: 14, textDecorationLine: 'underline' },
 
   breakupBox: { marginTop: 12, borderTopWidth: 1, paddingTop: 12 },
   supportRow: {
@@ -356,7 +424,7 @@ const styles = StyleSheet.create({
   rowLabel: { fontSize: 14, flex: 1 },
   rowValue: { fontSize: 15, fontWeight: '600', textAlign: 'right', flex: 1 },
 
-  sectionTitle: { fontSize: 17, fontWeight: '700', marginBottom: 10 },
+  // sectionTitle: { fontSize: 17, fontWeight: '700', marginBottom: 10 },
 
   iconTextContainer: {
     flexDirection: 'row',
