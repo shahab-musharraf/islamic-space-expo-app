@@ -411,63 +411,125 @@ const Home = () => {
                         />
                       </View>
                     </TouchableOpacity>
-                    {cityDropdownVisible && (
+                    {/* {cityDropdownVisible && (
                       <View style={[styles.cityDropdownMenu, { backgroundColor: colors.CARD, borderColor: colors.text + '20' }]}>
-                        {
+                        <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 200 }}>
+                          <View>
+                            <TouchableOpacity
+                              key={'India'}
+                              style={styles.cityDropdownItem}
+                              onPress={() => {
+                                setSelectedCity('India');
+                                setCityDropdownVisible(false);
+                              }}
+                            >
+                              <Text style={[styles.cityDropdownItemText, { color: colors.text }]}>
+                                {'India'}
+                              </Text>
+                              {selectedCity === 'India' && (
+                                <Ionicons name="checkmark" size={16} color={colors.text} />
+                              )}
+                            </TouchableOpacity>
 
-                          allPlacesLoading ? (
-                          <View style={styles.centered}>
-                            <ActivityIndicator size="small" color={colors.TINT} />
+                            {
+                              allPlaces.map((city:string) => (
+                                <TouchableOpacity
+                                  key={city}
+                                  style={styles.cityDropdownItem}
+                                  onPress={() => {
+                                    setSelectedCity(city.split(',')[0]);
+                                    setCityDropdownVisible(false);
+                                  }}
+                                >
+                                  <Text style={[styles.cityDropdownItemText, { color: colors.text }]}>
+                                    {city}
+                                  </Text>
+                                  {selectedCity === city && (
+                                    <Ionicons name="checkmark" size={16} color={colors.text} />
+                                  )}
+                                </TouchableOpacity>
+                              ))
+                            }
                           </View>
-                        ) : allPlacesError ? (
-                          <View style={styles.centered}>
-                            <Text style={[styles.message, { color: colors.TEXT }]}>Failed to load places</Text>
-                          </View>
-                        ) :
-
-                        <>
-
-                        <TouchableOpacity
-                                key={'India'}
-                                style={styles.cityDropdownItem}
-                                onPress={() => {
-                                  setSelectedCity('India');
-                                  setCityDropdownVisible(false);
-                                }}
-                              >
-                                <Text style={[styles.cityDropdownItemText, { color: colors.text }]}>
-                                  {'India'}
-                                </Text>
-                                {selectedCity === 'India' && (
-                                  <Ionicons name="checkmark" size={16} color={colors.text} />
-                                )}
-                              </TouchableOpacity>
-                        
-                          {
-                            allPlaces.map((city:string) => (
-                              <TouchableOpacity
-                                key={city}
-                                style={styles.cityDropdownItem}
-                                onPress={() => {
-                                  setSelectedCity(city.split(',')[0]);
-                                  setCityDropdownVisible(false);
-                                }}
-                              >
-                                <Text style={[styles.cityDropdownItemText, { color: colors.text }]}>
-                                  {city}
-                                </Text>
-                                {selectedCity === city && (
-                                  <Ionicons name="checkmark" size={16} color={colors.text} />
-                                )}
-                              </TouchableOpacity>
-                            ))
-                          }
-                        
-                        </>
-                        
-                        }
+                        </ScrollView>
                       </View>
-                    )}
+                    )} */}
+                    {/* city dropdown modal */}
+                    {/* CITY DROPDOWN MODAL (FIXED SCROLL ISSUE) */}
+                    <Modal
+                      visible={cityDropdownVisible}
+                      transparent
+                      animationType="fade"
+                      onRequestClose={() => setCityDropdownVisible(false)}
+                    >
+                      <Pressable
+                        style={styles.dropdownBackdrop}
+                        onPress={() => setCityDropdownVisible(false)}
+                      >
+                        <View
+                          style={[
+                            styles.dropdownModal,
+                            { backgroundColor: colors.CARD },
+                          ]}
+                        >
+                          {allPlacesLoading ? (
+                            <View style={styles.centered}>
+                              <ActivityIndicator size="small" color={colors.TINT} />
+                            </View>
+                          ) : allPlacesError ? (
+                            <View style={styles.centered}>
+                              <Text style={[styles.message, { color: colors.TEXT }]}>
+                                Failed to load places
+                              </Text>
+                            </View>
+                          ) : (
+                            <ScrollView
+                              showsVerticalScrollIndicator
+                              keyboardShouldPersistTaps="handled"
+                            >
+                              {/* INDIA OPTION */}
+                              <TouchableOpacity
+                                style={styles.cityDropdownItem}
+                                onPress={() => {
+                                  setSelectedCity("India");
+                                  setCityDropdownVisible(false);
+                                }}
+                              >
+                                <Text
+                                  style={[
+                                    styles.cityDropdownItemText,
+                                    { color: colors.text },
+                                  ]}
+                                >
+                                  India
+                                </Text>
+                              </TouchableOpacity>
+
+                              {/* CITY LIST */}
+                              {allPlaces.map((city: string) => (
+                                <TouchableOpacity
+                                  key={city}
+                                  style={styles.cityDropdownItem}
+                                  onPress={() => {
+                                    setSelectedCity(city.split(",")[0]);
+                                    setCityDropdownVisible(false);
+                                  }}
+                                >
+                                  <Text
+                                    style={[
+                                      styles.cityDropdownItemText,
+                                      { color: colors.text },
+                                    ]}
+                                  >
+                                    {city}
+                                  </Text>
+                                </TouchableOpacity>
+                              ))}
+                            </ScrollView>
+                          )}
+                        </View>
+                      </Pressable>
+                    </Modal>
                   </View>
                 </View>
               </View>
@@ -848,7 +910,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 4,
-    maxHeight: 200,
+    marginTop: 5,
   },
   cityDropdownItem: {
     flexDirection: 'row',
@@ -1061,6 +1123,25 @@ const styles = StyleSheet.create({
   message: {
     fontSize: 16,
   },
+  dropdownBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.2)',
+    justifyContent: 'flex-start',
+    paddingTop: 160, // aligns below header
+  },
+
+  dropdownModal: {
+    position:'absolute',
+    right: 0,
+    top: SCREEN_HEIGHT * 0.26,
+    borderWidth: 1,
+    marginHorizontal: 20,
+    borderRadius: 10,
+    maxHeight: 200,
+    elevation: 10,
+    width: '50%',
+  },
+
 });
 
 export default Home;
