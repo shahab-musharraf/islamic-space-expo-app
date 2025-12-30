@@ -111,7 +111,7 @@ return (
         <TextInput editable={editable} style={editable ? styles.input : styles.disabledInput} value={paymentInfo.upiId} onChangeText={(text: string) => handleChangeInput('upiId', text)} placeholder="Enter UPI Id" />
 
         <View>
-          <Text style={styles.label}>QR Code</Text>
+          <Text style={styles.label}>QR Code <Text style={{color: '#666'}}>(Optional)</Text></Text>
           {editable && <View style={{ flexDirection: 'row', gap: 12, marginVertical: 8 }}>
             <TouchableOpacity style={{...styles.btn, backgroundColor: editable ? '#e6e6ff' : 'gray'}} onPress={pickImages}>
               <Text style={{...styles.btnText, color: editable ? '#111' : 'white'}}>Select QR Code</Text>

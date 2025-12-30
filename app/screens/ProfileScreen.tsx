@@ -153,18 +153,6 @@ const ProfileScreen = () => {
     }
   };
 
-  const handleMyDonations = () => {
-    // navigation.navigate('screens/donations/MyDonations'); // adjust route name if needed
-  };
-
-  const handleMyOrders = () => {
-    // navigation.navigate('screens/orders/MyOrders'); // adjust route name if needed
-  };
-
-  const handleMyAddresses = () => {
-    // navigation.navigate('screens/addresses/MyAddresses'); // adjust route name if needed
-  };
-
   const handleMyWishlists = () => {
     navigation.navigate('screens/home/FavoriteMasjidsScreen');
   };
@@ -217,7 +205,7 @@ const ProfileScreen = () => {
 };
 
   const handleAddMasjid = () => {
-    navigation.navigate('');
+    navigation.navigate('screens/home/AddMasjidScreen');
   };
 
   return (
@@ -367,6 +355,15 @@ const ProfileScreen = () => {
           </TouchableOpacity>
         ) : null} */}
 
+        {profile && String(profile.role || '').split(',').includes(roles.MASJID_SECRETARY) === false && 
+        <TouchableOpacity style={styles.optionRow} onPress={handleAddMasjid}>
+          <View style={styles.iconTextContainer}>
+            <MasjidIcon name="mosque" size={20} color={colors.ICON} style={styles.icon} />
+            <Text style={{ ...styles.optionText, color: colors.TEXT }}>Add a Masjid</Text>
+          </View>
+          <Feather name="chevron-right" size={24} color={colors.DISABLED_TEXT} />
+        </TouchableOpacity>}
+
         <TouchableOpacity style={styles.optionRow} onPress={handleReadQuranSharif}>
           <View style={styles.iconTextContainer}>
             <FontAwesome5 name="quran" size={20} color={colors.ICON} style={styles.icon} />
@@ -376,13 +373,7 @@ const ProfileScreen = () => {
         </TouchableOpacity>
 
 
-        {profile && String(profile.role || '').split(',').includes(roles.MASJID_SECRETARY) === false && <TouchableOpacity style={styles.optionRow} onPress={handleAddMasjid}>
-          <View style={styles.iconTextContainer}>
-            <FontAwesome5 name="quran" size={20} color={colors.ICON} style={styles.icon} />
-            <Text style={{ ...styles.optionText, color: colors.TEXT }}>Add a Masjid</Text>
-          </View>
-          <Feather name="external-link" size={20} color={colors.DISABLED_TEXT} />
-        </TouchableOpacity>}
+        
 
       </View>
 

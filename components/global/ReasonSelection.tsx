@@ -24,6 +24,7 @@ type Props = {
 };
 
 const REASONS = [
+  'Invalid letter pad',
   'Incorrect account details',
   'Incorrect UPI Id',
   'Incorrect QR Code',

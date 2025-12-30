@@ -6,12 +6,13 @@ import { useUserLocationStore } from "@/stores/userLocationStore";
 import { showMessage } from "@/utils/functions";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@react-navigation/native";
+import * as DocumentPicker from 'expo-document-picker';
 import { Image, ImageBackground } from "expo-image";
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { AppleMaps, Coordinates, GoogleMaps } from 'expo-maps';
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, FlatList, Modal, Platform, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, FlatList, Modal, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { Asset, BasicInfo } from "../AddMasjidScreen";
 
@@ -66,6 +67,51 @@ const BasicInfoScreen : React.FC<BasicInfoProps> = ({ basicInfo, setBasicInfo })
   //     console.warn('image pick error', err);
   //   }
   // };
+
+
+  const handleSelectPdf = async () => {
+    try {
+      // 1. Call getDocumentAsync, passing the 'type' option
+      const result = await DocumentPicker.getDocumentAsync({
+        type: 'application/pdf', // Only allow PDFs
+        copyToCacheDirectory: true, // Default, but good to be explicit
+      });
+  
+      console.log(result, 'document picked up');
+  
+      // 2. Check if the user CANCELED (the correct check)
+      // The 'canceled' property is the key, based on the docs.
+      if (result.canceled) {
+        return; // Exit the function
+      }
+  
+      // 3. Handle success (if NOT canceled)
+      // The 'assets' property is an ARRAY, even for a single file.
+      // We get the first item from the array.
+      if (result.assets && result.assets.length > 0) {
+        const selectedPdf = result.assets[0];
+  
+        console.log('PDF Selected: ', selectedPdf.name, selectedPdf.uri);
+
+        setBasicInfo(((prev:BasicInfo) => ({
+          ...prev, 
+          letterPad: {
+            uri: selectedPdf.uri,
+            name: selectedPdf.name,
+            type: 'application/pdf',
+            mimeType: 'application/pdf'
+          }
+        })))
+
+      } else {
+        // This should not happen if canceled=false, but good to check
+        console.log('No assets found, though operation was not cancelled.');
+      }
+  
+    } catch (err) {
+      console.error('Unknown error while picking document:', err);
+    }
+  };
   
   const pickImages = async () => {
   try {
@@ -608,6 +654,15 @@ const BasicInfoScreen : React.FC<BasicInfoProps> = ({ basicInfo, setBasicInfo })
           />
         </View>
 
+
+        <Text style={styles.label}>Upload Letter Pad <Text style={{ color: colors.DISABLED_TEXT}}>{'(pdf format)'}</Text></Text>
+                    
+        <Pressable style={[styles.fileInput, {backgroundColor: 'colors.DISABLED_INPUT_BG'}]} onPress={handleSelectPdf}>
+          <Text style={basicInfo.letterPad ? styles.fileName : styles.placeholder}>
+            {basicInfo.letterPad.name ? basicInfo.letterPad.name : 'Tap to select a PDF file'}
+          </Text>
+        </Pressable>
+
         <View>
           <Text style={styles.label}>Images</Text>
           <View style={{ flexDirection: 'row', gap: 12, marginVertical: 8 }}>
@@ -781,6 +836,24 @@ const BasicInfoScreen : React.FC<BasicInfoProps> = ({ basicInfo, setBasicInfo })
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
+  },
+  fileInput: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 8,
+    minHeight: 50,
+    justifyContent: 'center',
+  },
+
+  // 👇 Add these styles
+  placeholder: {
+    color: '#aaa',
+
+  },
+  fileName: {
+    color: '#000',
   },
   mapModalTitle: {
     fontSize: 18,

@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
   Alert,
   Animated,
+  Dimensions,
   Keyboard,
   KeyboardAvoidingView,
   Modal,
@@ -46,12 +47,14 @@ export default function AuthScreen() {
 
   // Forgot password
   const [forgotOpen, setForgotOpen] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
   const [fpMobile, setFpMobile] = useState('');
   const [fpDob, setFpDob] = useState<Date | null>(null);
   const [fpPassword, setFpPassword] = useState('');
   const [fpConfirmPassword, setFpConfirmPassword] = useState('');
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
-  const [errors, setErrors] = useState<any>({});
+  const [termsAccepted, setTermsAccepted] = useState(true);
 
   const slideAnim = useRef(new Animated.Value(0)).current;
   const keyboardHeight = useRef(0);
@@ -141,7 +144,7 @@ useEffect(() => {
       if (forgotOpen) return;
 
       keyboardHeight.current = e.endCoordinates.height;
-      const lift = Math.min(keyboardHeight.current * 0.35, 140);
+      const lift = Math.min(keyboardHeight.current * 0.15 , 25);
 
       Animated.timing(slideAnim, {
         toValue: -lift,
@@ -216,6 +219,12 @@ useEffect(() => {
 
   const handleSubmit = async () => {
     Keyboard.dismiss();
+
+    if (mode === 'REGISTER' && !termsAccepted) {
+      Alert.alert('Terms and Conditions', 'Please accept the terms and conditions to register.');
+      return;
+    }
+
     if (!validate()) return;
 
     
@@ -277,11 +286,11 @@ useEffect(() => {
   /* ---------------- UI ---------------- */
 
   return (
-    <View style={styles.root}>
+    <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.scroll}>
         <Animated.View style={[styles.card, { transform: [{ translateY: slideAnim }] }]}>
           <View style={styles.logoWrapper}>
-            <Image source={require('@/assets/images/logo-text.png')} style={styles.logo} />
+            <Image source={require('@/assets/images/logo-green-bg-removed.png')} style={styles.logo} />
           </View>
 
           <Text style={styles.title}>
@@ -363,6 +372,24 @@ useEffect(() => {
             </TouchableOpacity>
           )}
 
+          {mode === 'REGISTER' && (
+            <View style={styles.termsContainer}>
+              <TouchableOpacity onPress={() => setTermsAccepted(!termsAccepted)} style={styles.checkbox}>
+                <Ionicons
+                  name={termsAccepted ? 'checkbox' : 'square-outline'}
+                  size={20}
+                  color={termsAccepted ? '#2E7D32' : '#999'}
+                />
+              </TouchableOpacity>
+              <Text style={styles.termsText}>
+                I agree to the{' '}
+                <Text style={styles.termsLink} onPress={() => setShowTermsModal(true)}>
+                  Terms and Conditions
+                </Text>
+              </Text>
+            </View>
+          )}
+
           <TouchableOpacity style={styles.primaryBtn} onPress={handleSubmit}>
             {isLoading ? <ActivityIndicator color="#fff" /> : (
               <Text style={styles.primaryText}>
@@ -371,6 +398,7 @@ useEffect(() => {
             )}
           </TouchableOpacity>
 
+            {/* keep for later use */}
           {/* <View style={styles.divider}>
             <View style={styles.line} />
             <Text style={styles.or}>OR</Text>
@@ -497,7 +525,53 @@ useEffect(() => {
           </View>
         
       </Modal>
-    </View>
+
+      <Modal visible={showTermsModal} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.termsModalCard}>
+            <Text style={styles.termsTitle}>Terms and Conditions</Text>
+            <ScrollView style={styles.termsScroll}>
+              <Text style={styles.termsContent}>
+                {`Welcome to IslamicSpace! By using our app, you agree to the following terms and conditions:
+
+1. **Acceptance of Terms**: By registering and using IslamicSpace, you accept and agree to be bound by the terms and conditions of this agreement.
+
+2. **Purpose of the App**: IslamicSpace is designed to help users find mosques, access Islamic resources, and connect with the Muslim community. All content and features are intended for lawful and respectful use.
+
+3. **User Responsibilities**:
+   - Provide accurate and truthful information during registration.
+   - Respect Islamic values and principles in all interactions.
+   - Do not use the app for any illegal, harmful, or offensive purposes.
+   - Maintain the confidentiality of your account credentials.
+
+4. **Data Privacy**: We collect and process your personal information (such as mobile number, name, and date of birth) to provide our services. Your data is protected in accordance with our Privacy Policy and applicable laws. We do not share your information with third parties without your consent, except as required by law.
+
+5. **Content and Conduct**:
+   - Users are responsible for the content they post or share.
+   - Offensive, discriminatory, or inappropriate content will be removed, and accounts may be suspended.
+   - Respect the sanctity of Islamic teachings and avoid spreading misinformation.
+
+6. **Account Security**: You are responsible for maintaining the security of your account. Notify us immediately if you suspect unauthorized access.
+
+7. **Limitation of Liability**: IslamicSpace is provided "as is" without warranties. We are not liable for any damages arising from the use of the app.
+
+8. **Modifications**: We reserve the right to modify these terms at any time. Continued use of the app constitutes acceptance of updated terms.
+
+9. **Termination**: We may terminate or suspend your account for violation of these terms.
+
+10. **Contact Us**: If you have questions, contact us through the app's support features.
+
+By checking the box, you acknowledge that you have read, understood, and agree to these terms.`}
+              </Text>
+            </ScrollView>
+            <TouchableOpacity style={styles.termsOkBtn} onPress={() => setShowTermsModal(false)}>
+              <Text style={styles.termsOkText}>OK</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+    </KeyboardAvoidingView>
   );
 }
 
@@ -506,14 +580,20 @@ useEffect(() => {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#F6F8F3' },
   scroll: { flexGrow: 1, justifyContent: 'center', padding: 16 },
-  card: { backgroundColor: '#fff', borderRadius: 20, padding: 22 },
-  logoWrapper: { alignItems: 'center', marginBottom: 12 },
-  logo: { width: 100, height: 150 },
-  title: { fontSize: 22, marginBottom: 10, textAlign: 'center', color: '#1B5E20' },
+  card: { 
+    backgroundColor: '#fff', 
+    borderRadius: 20, 
+    padding: 18,
+    width: Math.min(Dimensions.get('window').width * 0.9, 400),
+    alignSelf: 'center',
+  },
+  logoWrapper: { alignItems: 'center' },
+  logo: { width: 110, height: 120 },
+  title: { fontSize: 20, marginBottom: 10, textAlign: 'center', color: '#1B5E20' },
   input: {
     backgroundColor: '#FAFAFA',
     borderRadius: 14,
-    padding: 14,
+    padding: 12,
     marginBottom: 12,
     borderWidth: 1,
     borderColor: '#E0E0E0',
@@ -527,15 +607,43 @@ const styles = StyleSheet.create({
     borderColor: '#E0E0E0',
     marginBottom: 12,
   },
-  passwordInput: { flex: 1, paddingVertical: 14 },
+  passwordInput: { flex: 1, paddingVertical: 12 },
   primaryBtn: {
     backgroundColor: '#2E7D32',
-    padding: 14,
+    padding: 12,
     borderRadius: 14,
     alignItems: 'center',
     marginTop: 8,
   },
-  primaryText: { color: '#fff', fontSize: 16 },
+  primaryText: { color: '#fff', fontSize: 14 },
+  termsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 10,
+    marginBottom: 10,
+  },
+  checkbox: { marginRight: 8 },
+  termsText: { fontSize: 14, color: '#333', flex: 1 },
+  termsLink: { color: '#2E7D32', textDecorationLine: 'underline' },
+  termsModalCard: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 20,
+    width: '90%',
+    maxHeight: '80%',
+    alignSelf: 'center',
+  },
+  termsTitle: { fontSize: 18, fontWeight: 'bold', textAlign: 'center', marginBottom: 10, color: '#1B5E20' },
+  termsScroll: { maxHeight: 300 },
+  termsContent: { fontSize: 14, lineHeight: 20, color: '#333' },
+  termsOkBtn: {
+    backgroundColor: '#2E7D32',
+    padding: 10,
+    borderRadius: 14,
+    alignItems: 'center',
+    marginTop: 15,
+  },
+  termsOkText: { color: '#fff', fontSize: 14 },
   forgot: { textAlign: 'right', color: '#2E7D32', marginBottom: 10 },
   switchText: { textAlign: 'center', marginTop: 16, color: '#2E7D32' },
   divider: {

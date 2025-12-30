@@ -46,6 +46,7 @@ export interface BasicInfo {
   secretaryName: string;
   secretaryMobile: string;
   donationRequired: boolean;
+  letterPad: Asset
 }
 
 export interface BudgetInfo {
@@ -192,7 +193,12 @@ const AddMasjidScreen: React.FC = ({params}: any) => {
     isUnderConstruction: false,
     secretaryName: profile?.name || '',
     secretaryMobile: profile?.mobile || '',
-    donationRequired: true
+    donationRequired: true,
+    letterPad: { 
+      uri: '',
+      name: '',
+      type: ''
+    }
   })
 
   const [budgetInfo, setBudgetInfo] = useState<BudgetInfo>({
@@ -260,8 +266,7 @@ const AddMasjidScreen: React.FC = ({params}: any) => {
           !paymentInfo.accountNumber ||
           !paymentInfo.branch ||
           !paymentInfo.ifscCode ||
-          !paymentInfo.upiId ||
-          (!paymentInfo.qrCode.uri)
+          !paymentInfo.upiId
         )){
           Alert.alert(
             "Incomplete Information",
@@ -274,7 +279,7 @@ const AddMasjidScreen: React.FC = ({params}: any) => {
     try {
       const fd = new FormData();
 
-      const {videos, images, ...remBasicInfo} = basicInfo;
+      const {videos, images, letterPad, ...remBasicInfo} = basicInfo;
       const { qrCode, ...remPaymentInfo } = paymentInfo;
       const { budgetReport, ...remUnderConstructionBudgetInfo } = underConstructionBudgetInfo;
 
@@ -306,7 +311,12 @@ const AddMasjidScreen: React.FC = ({params}: any) => {
       // append images/videos
       for (const img of basicInfo.images) appendFile(img, 'images');
       for (const vid of basicInfo.videos) appendFile(vid, 'videos');
-      appendFile(qrCode, 'qrCode')
+      if(letterPad && letterPad.uri){
+        appendFile(letterPad, 'letterPad')
+      }
+      if(qrCode && qrCode.uri){
+        appendFile(qrCode, 'qrCode')
+      }
       if(basicInfo.isUnderConstruction){
         appendFile(budgetReport, 'budgetReport')
       }
@@ -339,8 +349,7 @@ const AddMasjidScreen: React.FC = ({params}: any) => {
           !paymentInfo.accountNumber ||
           !paymentInfo.branch ||
           !paymentInfo.ifscCode ||
-          !paymentInfo.upiId ||
-          (!paymentInfo.qrCode.uri)
+          !paymentInfo.upiId
         )){
           Alert.alert(
             "Incomplete Information",
@@ -353,7 +362,7 @@ const AddMasjidScreen: React.FC = ({params}: any) => {
     try {
       const fd = new FormData();
 
-      const {videos, images, ...remBasicInfo} = basicInfo;
+      const {videos, images, letterPad, ...remBasicInfo} = basicInfo;
       const { qrCode, ...remPaymentInfo } = paymentInfo;
       const { budgetReport, ...remUnderConstructionBudgetInfo } = underConstructionBudgetInfo;
 
@@ -397,12 +406,13 @@ const AddMasjidScreen: React.FC = ({params}: any) => {
       const newQrCode = qrCode && !qrCode.name.startsWith('islamic-space-existing-masjid-qrcode') ? qrCode : null;
       const oldQrCode = qrCode && qrCode.name.startsWith('islamic-space-existing-masjid-qrcode') ? qrCode : null;
 
+      const oldLetterPad = letterPad && letterPad.name.startsWith('islamic-space-existing-masjid-letterpad') ? letterPad : null;
+      const newLetterPad = letterPad && !letterPad.name.startsWith('islamic-space-existing-masjid-letterpad') ? letterPad : null;
+
       const oldBudgerReport = budgetReport && budgetReport.name.startsWith('islamic-space-existing-masjid-budgetreport') ? budgetReport : null;
       const newBudgetReport = budgetReport && !budgetReport.name.startsWith('islamic-space-existing-masjid-budgetreport') ? budgetReport : null;
 
       fd.append('isSecretary', isSecretary)
-
-      console.log(newBudgetReport, '$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$')
 
       if(Object.keys(changedBasicInfo).length){
         fd.append('masjidInfo', JSON.stringify(changedBasicInfo));
@@ -430,6 +440,9 @@ const AddMasjidScreen: React.FC = ({params}: any) => {
       }
       if(oldBudgerReport){
         fd.append('oldBudgerReport', JSON.stringify(oldBudgerReport.uri));
+      }
+      if(oldLetterPad){
+        fd.append('oldLetterPad', JSON.stringify(oldLetterPad.uri));
       }
 
       // we must append files as field 'media' multiple times (backend expects anyFiles)
@@ -460,6 +473,9 @@ const AddMasjidScreen: React.FC = ({params}: any) => {
       }
       if(newQrCode){
         await appendFile(newQrCode, 'qrCode');
+      }
+      if(newLetterPad){
+        await appendFile(newLetterPad, 'letterPad');
       }
       if(basicInfo.isUnderConstruction && newBudgetReport){
         await appendFile(newBudgetReport, 'budgetReport');
@@ -514,11 +530,12 @@ const AddMasjidScreen: React.FC = ({params}: any) => {
       !basicInfo.latitude.trim() ||
       !basicInfo.longitude.trim() ||
       (!basicInfo.images.length) ||
-      (!basicInfo.videos.length)
+      (!basicInfo.videos.length) ||
+      (!basicInfo.letterPad.uri.trim())
     )) ){
       Alert.alert(
         "Incomplete Information",
-        "Please fill all required fields and upload at least one image and video."
+        "Please fill all required fields including letter pad, at least one image and video."
       );
       return;
     }
@@ -620,7 +637,12 @@ const AddMasjidScreen: React.FC = ({params}: any) => {
         isUnderConstruction: fetchedMasjidData.isUnderConstruction,
         secretaryName: fetchedMasjidData.secretaryName,
         secretaryMobile: fetchedMasjidData.secretaryMobile,
-        donationRequired: fetchedMasjidData.donationRequired
+        donationRequired: fetchedMasjidData.donationRequired,
+        letterPad: { 
+          uri: fetchedMasjidData.letterPad,
+          name: `islamic-space-existing-masjid-letterpad|${fetchedMasjidData.letterPad}`,
+          type: 'image',
+        }
       })
       setPrayerInfo(fetchedMasjidData.prayerInfo)
       setPaymentInfo({...fetchedMasjidData.accountInfo, qrCode: {

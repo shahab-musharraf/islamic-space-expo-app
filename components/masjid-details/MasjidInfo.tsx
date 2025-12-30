@@ -1,8 +1,11 @@
 import { Theme } from '@/constants/types';
 import { useTheme } from '@react-navigation/native';
 // import * as Clipboard from 'expo-clipboard';
+import Feather from '@expo/vector-icons/Feather';
+import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 import FollowingIcons from '@expo/vector-icons/Ionicons';
 import React, { useState } from 'react';
+
 import {
   Alert,
   Image,
@@ -14,14 +17,6 @@ import {
   View,
 } from 'react-native';
 
-/* ------------------ HELPERS ------------------ */
-
-const copyText = async (text:string) => {
-  // await Clipboard.setStringAsync(text);
-  Alert.alert('Copied', 'UPI ID copied to clipboard');
-};
-
-/* ------------------ SMALL COMPONENTS ------------------ */
 
 const ProgressBar = ({
   progress,
@@ -61,32 +56,6 @@ const Row = ({
   );
 };
 
-const UpiBox = ({
-  upiId,
-  colors,
-}: {
-  upiId?: string;
-  colors: any;
-}) => {
-  if (!upiId) return null;
-
-  return (
-    <TouchableOpacity
-      style={[styles.upiBox, { backgroundColor: colors.BACKGROUND }]}
-      onPress={() => copyText(upiId)}
-    >
-      <Text style={[styles.upiLabel, { color: colors.TEXT_SECONDARY }]}>
-        UPI ID
-      </Text>
-      <Text style={[styles.upiValue, { color: colors.TEXT }]}>
-        {upiId}
-      </Text>
-      <Text style={[styles.copyHint, { color: colors.primary }]}>
-        Tap to copy
-      </Text>
-    </TouchableOpacity>
-  );
-};
 
 /* ------------------ MAIN COMPONENT ------------------ */
 
@@ -118,6 +87,25 @@ const MasjidInfo = ({ masjid }: { masjid: any }) => {
       ? (constructionCollected / constructionTotal) * 100
       : 0;
 
+   const handleSupportUs = async () => {
+    const upiId = masjid?.accountInfo?.upiId;
+    if (!upiId) {
+      Alert.alert("UPI ID not available", "No UPI ID found for this masjid");
+      return;
+    }
+    const name = "Support App";
+    const upiUrl = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(
+      name
+    )}&cu=INR`;
+
+    const supported = await Linking.canOpenURL(upiUrl);
+
+    if (supported) {
+      Linking.openURL(upiUrl);
+    } else {
+      Alert.alert("UPI not available", "No UPI app found on this device");
+    }
+  };
   return (
     <ScrollView
       style={[styles.container, { backgroundColor: colors.BACKGROUND }]}
@@ -137,6 +125,33 @@ const MasjidInfo = ({ masjid }: { masjid: any }) => {
           {masjid.address}
         </Text>
       </View>
+
+      { masjid?.accountInfo?.upiId &&
+            <TouchableOpacity
+            style={[styles.optionRow, styles.supportRow]}
+            onPress={handleSupportUs}
+            activeOpacity={0.8}
+          >
+            <View style={styles.iconTextContainer}>
+              <FontAwesome5
+                name="hand-holding-heart"
+                size={20}
+                color={colors.primary}
+                style={styles.icon}
+              />
+              <View>
+                <Text style={[styles.optionText, { color: colors.TEXT }]}>
+                  Donate Us
+                </Text>
+                <Text style={styles.subText}>
+                  Help us maintain the masjid and its activities
+                </Text>
+              </View>
+            </View>
+
+            <Feather name="chevron-right" size={22} color={colors.DISABLED_TEXT} />
+          </TouchableOpacity>
+          }
 
       {/* ================= NORMAL MASJID ================= */}
       {!isUnderConstruction && (
@@ -183,9 +198,6 @@ const MasjidInfo = ({ masjid }: { masjid: any }) => {
               <Row label="Other Expenses" value={masjid?.budgetInfo?.otherExpenses} textColor={colors.TEXT} />
             </View>
           )}
-
-          {/* ✅ UPI FOR NORMAL MASJID */}
-          <UpiBox upiId={masjid?.accountInfo?.upiId} colors={colors} />
         </View>
       )}
 
@@ -232,7 +244,7 @@ const MasjidInfo = ({ masjid }: { masjid: any }) => {
           />
 
           {/* ✅ UPI FOR CONSTRUCTION */}
-          <UpiBox upiId={masjid?.accountInfo?.upiId} colors={colors} />
+          {/* <UpiBox upiId={masjid?.accountInfo?.upiId} colors={colors} /> */}
 
           {masjid?.underConstructionBudgetInfo?.budgetReport && (
             <TouchableOpacity
@@ -241,7 +253,7 @@ const MasjidInfo = ({ masjid }: { masjid: any }) => {
                 Linking.openURL(masjid.underConstructionBudgetInfo.budgetReport)
               }
             >
-              <Text style={[styles.reportBtnText, { color: colors.TEXT }]}>
+              <Text style={[styles.reportBtnText, { color: 'white' }]}>
                 View Construction Report (PDF)
               </Text>
             </TouchableOpacity>
@@ -262,6 +274,8 @@ const MasjidInfo = ({ masjid }: { masjid: any }) => {
           />
         </View>
       )}
+
+
     </ScrollView>
   );
 };
@@ -311,6 +325,28 @@ const styles = StyleSheet.create({
   breakupText: { fontSize: 15, fontWeight: '600' },
 
   breakupBox: { marginTop: 12, borderTopWidth: 1, paddingTop: 12 },
+  supportRow: {
+    backgroundColor: "rgba(76, 175, 80, 0.08)",
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 20,
+    marginTop: 5,
+  },
+
+  subText: {
+    fontSize: 12,
+    color: "#777",
+    marginTop: 2,
+  },
+  optionRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 15,
+    alignItems: 'center',
+  },
+  optionText: {
+    fontSize: 16,
+  },
 
   row: {
     flexDirection: 'row',
@@ -321,6 +357,15 @@ const styles = StyleSheet.create({
   rowValue: { fontSize: 15, fontWeight: '600', textAlign: 'right', flex: 1 },
 
   sectionTitle: { fontSize: 17, fontWeight: '700', marginBottom: 10 },
+
+  iconTextContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  icon: {
+    width: 35,
+  },
 
   upiBox: {
     marginTop: 16,

@@ -259,11 +259,12 @@ const Home = () => {
     <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
       <View style={styles.logoContainer}>
         <Image
-          source={require("@/assets/images/homepage/logo-light.png")}
+          source={require("@/assets/images/logo-green-bg-removed.png")}
           style={{
-            width: 100,
+            width: 110,
             height: 50,
             objectFit: "contain",
+            backgroundColor:'transparent'
           }}
         />
 
