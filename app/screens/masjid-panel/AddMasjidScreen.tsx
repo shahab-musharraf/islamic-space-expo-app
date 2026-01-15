@@ -257,6 +257,8 @@ const AddMasjidScreen: React.FC = ({params}: any) => {
     }
   })
 
+  const [mapCoords, setMapCoords] = useState(false);
+
 
 
   const onSubmit = async () => {
@@ -679,7 +681,7 @@ const AddMasjidScreen: React.FC = ({params}: any) => {
       {renderProgress()}
 
       <View style={styles.content}>
-        {step === 1 && <BasicInfoScreen basicInfo = {basicInfo} setBasicInfo = {setBasicInfo} />}
+        {step === 1 && <BasicInfoScreen mapCoords={mapCoords} setMapCoords={setMapCoords} basicInfo = {basicInfo} setBasicInfo = {setBasicInfo} />}
         {step === 2 && basicInfo.donationRequired && <BudegetInfoScreen budgetInfo={budgetInfo} setBudgetInfo={setBudgetInfo} 
                         isUnderConstruction ={basicInfo.isUnderConstruction} 
                         underConstructionBudgetInfo={underConstructionBudgetInfo}

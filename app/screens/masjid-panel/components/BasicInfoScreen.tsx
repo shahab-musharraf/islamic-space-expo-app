@@ -19,11 +19,13 @@ import { Asset, BasicInfo } from "../AddMasjidScreen";
 interface BasicInfoProps  {
     basicInfo : BasicInfo,
     setBasicInfo :(value: BasicInfo | ((prev: BasicInfo) => BasicInfo)) => void
+    mapCoords: boolean;
+    setMapCoords: (value: boolean) => void;
 }
 
 const MAXX_IMAGES_ALLOWED = 4
 const MAXX_VIDEOS_ALLOWED = 1
-const BasicInfoScreen : React.FC<BasicInfoProps> = ({ basicInfo, setBasicInfo }) => {
+const BasicInfoScreen : React.FC<BasicInfoProps> = ({ basicInfo, setBasicInfo, mapCoords, setMapCoords }) => {
     const { colors } = useTheme() as Theme;
   const { location, clearLocation } = useUserLocationStore(state => state);
   const { fetchLocation, errorMsg, isLoading, handleExitApp, handleOpenSettings  } = useUserLocation();
@@ -319,7 +321,7 @@ const BasicInfoScreen : React.FC<BasicInfoProps> = ({ basicInfo, setBasicInfo })
   }
 
   useEffect(() => {
-    if(location){
+    if(location && !mapCoords){
       setBasicInfo({
         ...basicInfo,
         address: location.address?.formattedAddress ?? '-',
@@ -428,6 +430,7 @@ const BasicInfoScreen : React.FC<BasicInfoProps> = ({ basicInfo, setBasicInfo })
       showMessage('Failed to get address for selected location');
     }
 
+    setMapCoords(true);
     setIsMapModalVisible(false);
   };
 
