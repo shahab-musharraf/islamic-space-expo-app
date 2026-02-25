@@ -90,7 +90,7 @@ const Home = () => {
   const [updateLocationLoading, setUpdateLocationLoading] = useState(false);
   const [searchValue, setSearchValue] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchMode, setSearchMode] = useState<'global' | 'nearby'>('global');
+  const [searchMode, setSearchMode] = useState<"global" | "nearby">("global");
   const [searchModeSwitching, setSearchModeSwitching] = useState(false);
 
   const [filterModalVisible, setFilterModalVisible] = useState(false);
@@ -113,7 +113,7 @@ const Home = () => {
 
   // custom hooks and stores
   const { restoreLocation, clearLocation } = useUserLocationStore();
-  const { hydrated, setFavorite, isFavorite, favorites } =
+  const { hydrated, setFavorite, isFavorite, favorites, reset } =
     useFavoriteMasjidStore();
   const {
     location,
@@ -124,7 +124,7 @@ const Home = () => {
     isLoading: locationLoading,
   } = useUserLocation();
   const { colors } = useTheme() as Theme;
-  const navigation : any = useNavigation();
+  const navigation: any = useNavigation();
   const { data, error, isLoading } = useGetAllNearbyMasjids(
     RADIUS,
     LIMIT,
@@ -132,7 +132,7 @@ const Home = () => {
     "",
     appliedFilter.salah,
     appliedFilter.sortBy,
-    appliedFilter.level
+    appliedFilter.level,
   ); // need to optimize search
   const {
     data: favoriteMosque,
@@ -146,8 +146,17 @@ const Home = () => {
     error: budgetNeededError,
   } = useGetBudgetNeededMasjids("30", selectedCity);
 
-  const { data: globalSearchData, isLoading: globalSearchLoading, error: globalSearchError } = useGlobalSearch(debouncedSearch);
-  const { data: allPlaces, isLoading: allPlacesLoading, isError: allPlacesError, refetch: refetchAllPlaces } = useGetAllPlaces();
+  const {
+    data: globalSearchData,
+    isLoading: globalSearchLoading,
+    error: globalSearchError,
+  } = useGlobalSearch(debouncedSearch);
+  const {
+    data: allPlaces,
+    isLoading: allPlacesLoading,
+    isError: allPlacesError,
+    refetch: refetchAllPlaces,
+  } = useGetAllPlaces();
 
   // Debounce search value
   useEffect(() => {
@@ -166,6 +175,10 @@ const Home = () => {
     }
   }, [favoriteMosqueSuccess, favoriteMosque]);
 
+  useEffect(() => {
+    reset();
+  }, []);
+
   // Close dropdown when clicking outside or after timeout
   useEffect(() => {
     if (cityDropdownVisible) {
@@ -181,15 +194,20 @@ const Home = () => {
     // Create the regex only once per memoization cycle
     const sequentialRegex = createSequentialRegex(debouncedSearch);
 
-    if (!isLoading && data && data.length && debouncedSearch && searchMode === 'nearby') {
+    if (
+      !isLoading &&
+      data &&
+      data.length &&
+      debouncedSearch &&
+      searchMode === "nearby"
+    ) {
       // Existing logic for nearby search
       return data.filter(
         (masjid: any) =>
           // Check if the regex pattern is found in the name or address
-            sequentialRegex.test(masjid.name) ||
-            sequentialRegex.test(masjid.address)
-        );
-      
+          sequentialRegex.test(masjid.name) ||
+          sequentialRegex.test(masjid.address),
+      );
     }
     return data;
   }, [isLoading, data, searchValue, debouncedSearch, searchMode]);
@@ -220,8 +238,6 @@ const Home = () => {
     }
   }, [isModalVisible, slideAnim]);
 
-
-
   // functions
 
   const handleUpdateLocation = async () => {
@@ -235,7 +251,7 @@ const Home = () => {
   const handleSearchModeSwitch = () => {
     if (searchModeSwitching) return; // Prevent multiple presses
 
-    const newMode = searchMode === 'global' ? 'nearby' : 'global';
+    const newMode = searchMode === "global" ? "nearby" : "global";
     setSearchModeSwitching(true);
 
     // Animate the switch
@@ -266,7 +282,7 @@ const Home = () => {
             width: 110,
             height: 50,
             objectFit: "contain",
-            backgroundColor:'transparent'
+            backgroundColor: "transparent",
           }}
         />
 
@@ -294,7 +310,11 @@ const Home = () => {
           <TextInput
             value={searchValue}
             onChangeText={setSearchValue}
-            placeholder={searchMode === "global" ? "Search for Masjid Globally" : "Search for Nearby Masjid"}
+            placeholder={
+              searchMode === "global"
+                ? "Search for Masjid Globally"
+                : "Search for Nearby Masjid"
+            }
             placeholderTextColor={colors.DISABLED_TEXT}
             style={[
               styles.input,
@@ -307,7 +327,10 @@ const Home = () => {
             ]}
           />
           {searchValue.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchValue('')} style={styles.clearButton}>
+            <TouchableOpacity
+              onPress={() => setSearchValue("")}
+              style={styles.clearButton}
+            >
               <Ionicons name="close" size={20} color={colors.text} />
             </TouchableOpacity>
           )}
@@ -316,12 +339,16 @@ const Home = () => {
               styles.searchModeButton,
               {
                 backgroundColor: colors.BG_SECONDARY,
-                transform: [{ scale: searchModeAnim.interpolate({
-                  inputRange: [0, 0.5, 1],
-                  outputRange: [1, 0.95, 1],
-                }) }],
+                transform: [
+                  {
+                    scale: searchModeAnim.interpolate({
+                      inputRange: [0, 0.5, 1],
+                      outputRange: [1, 0.95, 1],
+                    }),
+                  },
+                ],
                 opacity: searchModeSwitching ? 0.7 : 1,
-              }
+              },
             ]}
             onPress={handleSearchModeSwitch}
             disabled={searchModeSwitching}
@@ -331,7 +358,11 @@ const Home = () => {
             ) : (
               <>
                 <Ionicons
-                  name={searchMode === 'global' ? 'globe-outline' : 'location-outline'}
+                  name={
+                    searchMode === "global"
+                      ? "globe-outline"
+                      : "location-outline"
+                  }
                   size={20}
                   color={colors.text}
                 />
@@ -344,7 +375,7 @@ const Home = () => {
         </View>
 
         {/* Global Search Suggestions */}
-        {searchMode === 'global' && debouncedSearch.trim().length > 2 && (
+        {searchMode === "global" && debouncedSearch.trim().length > 2 && (
           <View style={styles.suggestionsContainer}>
             {globalSearchLoading ? (
               <View style={styles.centered}>
@@ -352,7 +383,9 @@ const Home = () => {
               </View>
             ) : globalSearchError ? (
               <View style={styles.centered}>
-                <Text style={[styles.message, { color: colors.TEXT }]}>Failed to load search results</Text>
+                <Text style={[styles.message, { color: colors.TEXT }]}>
+                  Failed to load search results
+                </Text>
               </View>
             ) : globalSearchData && globalSearchData.length > 0 ? (
               <FlatList
@@ -360,15 +393,36 @@ const Home = () => {
                 keyExtractor={(item) => item._id}
                 renderItem={({ item }) => (
                   <TouchableOpacity
-                    style={[styles.suggestionItem, { borderBottomColor: colors.DISABLED_TEXT }]}
-                    onPress={() => navigation.navigate('screens/home/MasjidDetails', { _id: item._id })}
+                    style={[
+                      styles.suggestionItem,
+                      { borderBottomColor: colors.DISABLED_TEXT },
+                    ]}
+                    onPress={() =>
+                      navigation.navigate("screens/home/MasjidDetails", {
+                        _id: item._id,
+                      })
+                    }
                   >
                     {item.image && (
-                      <Image source={{ uri: item.image }} style={styles.suggestionImage} />
+                      <Image
+                        source={{ uri: item.image }}
+                        style={styles.suggestionImage}
+                      />
                     )}
                     <View style={styles.suggestionTextContainer}>
-                      <Text style={[styles.suggestionName, { color: colors.TEXT }]}>{item.name}</Text>
-                      <Text style={[styles.suggestionAddress, { color: colors.DISABLED_TEXT }]}>{item.address}</Text>
+                      <Text
+                        style={[styles.suggestionName, { color: colors.TEXT }]}
+                      >
+                        {item.name}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.suggestionAddress,
+                          { color: colors.DISABLED_TEXT },
+                        ]}
+                      >
+                        {item.address}
+                      </Text>
                     </View>
                   </TouchableOpacity>
                 )}
@@ -377,7 +431,9 @@ const Home = () => {
               />
             ) : (
               <View style={styles.centered}>
-                <Text style={[styles.message, { color: colors.TEXT }]}>No masjid found</Text>
+                <Text style={[styles.message, { color: colors.TEXT }]}>
+                  No masjid found
+                </Text>
               </View>
             )}
           </View>
@@ -390,28 +446,39 @@ const Home = () => {
         >
           {/* Budget Needed Masjids Section */}
           <View style={styles.budgetSection}>
-              <View style={styles.budgetSectionHeader}>
-                <View style={styles.budgetSectionTitleRow}>
-                  <Text style={[styles.budgetSectionTitle, { color: colors.text }]}>
-                    High Donation Needed
-                  </Text>
-                  <View style={styles.cityDropdownContainer}>
-                    <TouchableOpacity
-                      style={[styles.cityDropdown, { borderColor: colors.text + '40' }]}
-                      onPress={() => setCityDropdownVisible(!cityDropdownVisible)}
+            <View style={styles.budgetSectionHeader}>
+              <View style={styles.budgetSectionTitleRow}>
+                <Text
+                  style={[styles.budgetSectionTitle, { color: colors.text }]}
+                >
+                  High Donation Needed
+                </Text>
+                <View style={styles.cityDropdownContainer}>
+                  <TouchableOpacity
+                    style={[
+                      styles.cityDropdown,
+                      { borderColor: colors.text + "40" },
+                    ]}
+                    onPress={() => setCityDropdownVisible(!cityDropdownVisible)}
+                  >
+                    <Text
+                      style={[styles.cityDropdownText, { color: colors.text }]}
                     >
-                      <Text style={[styles.cityDropdownText, { color: colors.text }]}>
-                        {selectedCity.length > 10 ? selectedCity.substring(0, 7) + '...' : selectedCity}
-                      </Text>
-                      <View style={styles.dropdownArrow}>
-                        <Ionicons
-                          name={cityDropdownVisible ? "chevron-up" : "chevron-down"}
-                          size={16}
-                          color={colors.text}
-                        />
-                      </View>
-                    </TouchableOpacity>
-                    {/* {cityDropdownVisible && (
+                      {selectedCity.length > 10
+                        ? selectedCity.substring(0, 7) + "..."
+                        : selectedCity}
+                    </Text>
+                    <View style={styles.dropdownArrow}>
+                      <Ionicons
+                        name={
+                          cityDropdownVisible ? "chevron-up" : "chevron-down"
+                        }
+                        size={16}
+                        color={colors.text}
+                      />
+                    </View>
+                  </TouchableOpacity>
+                  {/* {cityDropdownVisible && (
                       <View style={[styles.cityDropdownMenu, { backgroundColor: colors.CARD, borderColor: colors.text + '20' }]}>
                         <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 200 }}>
                           <View>
@@ -454,44 +521,76 @@ const Home = () => {
                         </ScrollView>
                       </View>
                     )} */}
-                    {/* city dropdown modal */}
-                    {/* CITY DROPDOWN MODAL (FIXED SCROLL ISSUE) */}
-                    <Modal
-                      visible={cityDropdownVisible}
-                      transparent
-                      animationType="fade"
-                      onRequestClose={() => setCityDropdownVisible(false)}
+                  {/* city dropdown modal */}
+                  {/* CITY DROPDOWN MODAL (FIXED SCROLL ISSUE) */}
+                  <Modal
+                    visible={cityDropdownVisible}
+                    transparent
+                    animationType="fade"
+                    onRequestClose={() => setCityDropdownVisible(false)}
+                  >
+                    <Pressable
+                      style={styles.dropdownBackdrop}
+                      onPress={() => setCityDropdownVisible(false)}
                     >
-                      <Pressable
-                        style={styles.dropdownBackdrop}
-                        onPress={() => setCityDropdownVisible(false)}
+                      <View
+                        style={[
+                          styles.dropdownModal,
+                          { backgroundColor: colors.CARD },
+                        ]}
                       >
-                        <View
-                          style={[
-                            styles.dropdownModal,
-                            { backgroundColor: colors.CARD },
-                          ]}
-                        >
-                          {allPlacesLoading ? (
-                            <View style={styles.centered}>
-                              <ActivityIndicator size="small" color={colors.TINT} />
-                            </View>
-                          ) : allPlacesError ? (
-                            <View style={styles.centered}>
-                              <Text style={[styles.message, { color: colors.TEXT }]}>
-                                Failed to load places
-                              </Text>
-                            </View>
-                          ) : (
-                            <ScrollView
-                              showsVerticalScrollIndicator
-                              keyboardShouldPersistTaps="handled"
+                        {allPlacesLoading ? (
+                          <View style={styles.centered}>
+                            <ActivityIndicator
+                              size="small"
+                              color={colors.TINT}
+                            />
+                          </View>
+                        ) : allPlacesError ? (
+                          <View style={styles.centered}>
+                            <Text
+                              style={[styles.message, { color: colors.TEXT }]}
                             >
-                              {/* INDIA OPTION */}
+                              Failed to load places
+                            </Text>
+                          </View>
+                        ) : (
+                          <ScrollView
+                            showsVerticalScrollIndicator
+                            keyboardShouldPersistTaps="handled"
+                          >
+                            {/* INDIA OPTION */}
+                            <TouchableOpacity
+                              style={styles.cityDropdownItem}
+                              onPress={() => {
+                                setSelectedCity("India");
+                                setCityDropdownVisible(false);
+                              }}
+                            >
+                              <Text
+                                style={[
+                                  styles.cityDropdownItemText,
+                                  { color: colors.text },
+                                ]}
+                              >
+                                India
+                              </Text>
+                              {selectedCity === "India" && (
+                                <Ionicons
+                                  name="checkmark"
+                                  size={16}
+                                  color={colors.text}
+                                />
+                              )}
+                            </TouchableOpacity>
+
+                            {/* CITY LIST */}
+                            {allPlaces.map((city: string) => (
                               <TouchableOpacity
+                                key={city}
                                 style={styles.cityDropdownItem}
                                 onPress={() => {
-                                  setSelectedCity("India");
+                                  setSelectedCity(city);
                                   setCityDropdownVisible(false);
                                 }}
                               >
@@ -501,79 +600,63 @@ const Home = () => {
                                     { color: colors.text },
                                   ]}
                                 >
-                                  India
+                                  {city}
                                 </Text>
-                                {selectedCity === 'India' && (
-                                  <Ionicons name="checkmark" size={16} color={colors.text} />
+                                {selectedCity === city && (
+                                  <Ionicons
+                                    name="checkmark"
+                                    size={16}
+                                    color={colors.text}
+                                  />
                                 )}
                               </TouchableOpacity>
-
-                              {/* CITY LIST */}
-                              {allPlaces.map((city: string) => (
-                                <TouchableOpacity
-                                  key={city}
-                                  style={styles.cityDropdownItem}
-                                  onPress={() => {
-                                    setSelectedCity(city);
-                                    setCityDropdownVisible(false);
-                                  }}
-                                >
-                                  <Text
-                                    style={[
-                                      styles.cityDropdownItemText,
-                                      { color: colors.text },
-                                    ]}
-                                  >
-                                    {city}
-                                  </Text>
-                                  {selectedCity === city && (
-                                    <Ionicons name="checkmark" size={16} color={colors.text} />
-                                  )}
-                                </TouchableOpacity>
-                              ))}
-                            </ScrollView>
-                          )}
-                        </View>
-                      </Pressable>
-                    </Modal>
-                  </View>
+                            ))}
+                          </ScrollView>
+                        )}
+                      </View>
+                    </Pressable>
+                  </Modal>
                 </View>
               </View>
-
-              {budgetNeededLoading ? (
-                <View style={styles.budgetLoadingContainer}>
-                  <ActivityIndicator size="large" color={colors.text} />
-                  <Text style={[styles.loadingText, { color: colors.text + '80' }]}>
-                    Loading donation needs...
-                  </Text>
-                </View>
-              ) : budgetNeededError ? (
-                <View style={styles.budgetLoadingContainer}>
-                  <Text style={[styles.loadingText, { color: colors.text + '60' }]}>
-                    Failed to load data. Please restart the app.
-                  </Text>
-                </View>
-              ) : budgetNeededMasjids && budgetNeededMasjids.length > 0 ? (
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.budgetCardsContainer}
-                >
-                  {budgetNeededMasjids.map((masjid: BudgetNeededMasjidProps) => (
-                    <BudgetNeededCard
-                      key={masjid._id}
-                      {...masjid}
-                    />
-                  ))}
-                </ScrollView>
-              ) : (
-                <View style={styles.budgetNoDataContainer}>
-                  <Text style={[styles.noDataText, { color: colors.text + '60' }]}>
-                    No data found
-                  </Text>
-                </View>
-              )}
             </View>
+
+            {budgetNeededLoading ? (
+              <View style={styles.budgetLoadingContainer}>
+                <ActivityIndicator size="large" color={colors.text} />
+                <Text
+                  style={[styles.loadingText, { color: colors.text + "80" }]}
+                >
+                  Loading donation needs...
+                </Text>
+              </View>
+            ) : budgetNeededError ? (
+              <View style={styles.budgetLoadingContainer}>
+                <Text
+                  style={[styles.loadingText, { color: colors.text + "60" }]}
+                >
+                  Failed to load data. Please restart the app.
+                </Text>
+              </View>
+            ) : budgetNeededMasjids && budgetNeededMasjids.length > 0 ? (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.budgetCardsContainer}
+              >
+                {budgetNeededMasjids.map((masjid: BudgetNeededMasjidProps) => (
+                  <BudgetNeededCard key={masjid._id} {...masjid} />
+                ))}
+              </ScrollView>
+            ) : (
+              <View style={styles.budgetNoDataContainer}>
+                <Text
+                  style={[styles.noDataText, { color: colors.text + "60" }]}
+                >
+                  No data found
+                </Text>
+              </View>
+            )}
+          </View>
 
           <View>
             <View style={styles.nearbySectionLabel}>
@@ -615,12 +698,12 @@ const Home = () => {
                   ? appliedFilter.level === "PAST"
                     ? " whose time is passed"
                     : appliedFilter.level === "IMMEDIATE"
-                    ? " whose time is within 5 minutes"
-                    : appliedFilter.level === "SOON"
-                    ? " whose time in between 5 to 20 minutes"
-                    : appliedFilter.level === "LATER"
-                    ? " whose time is after 20 minutes"
-                    : ""
+                      ? " whose time is within 5 minutes"
+                      : appliedFilter.level === "SOON"
+                        ? " whose time in between 5 to 20 minutes"
+                        : appliedFilter.level === "LATER"
+                          ? " whose time is after 20 minutes"
+                          : ""
                   : ""}
               </Text>
             ) : (
@@ -635,10 +718,12 @@ const Home = () => {
             )}
           </View>
           {isLoading || locationLoading || favoriteMosqueLoading ? (
-            <View style={[
+            <View
+              style={[
                 styles.container,
                 { justifyContent: "center", alignItems: "center" },
-              ]}>
+              ]}
+            >
               <Loader />
             </View>
           ) : error ? (
@@ -703,7 +788,12 @@ const Home = () => {
                   <Text style={styles.modalBtnText}>Open Settings</Text>
                 </TouchableOpacity>
               )}
-              <TouchableOpacity style={styles.modalBtn} onPress={() => { fetchLocation(true)   }}>
+              <TouchableOpacity
+                style={styles.modalBtn}
+                onPress={() => {
+                  fetchLocation(true);
+                }}
+              >
                 <Text style={styles.modalBtnText}>
                   {errorMsg === "Please enable GPS!" ? "Enable" : "Retry"}
                 </Text>
@@ -718,7 +808,9 @@ const Home = () => {
         animationType="fade" // "fade" for the backdrop, we handle the slide
         transparent={true}
         visible={isModalVisible}
-        onRequestClose={() => { setIsModalVisible(false); }}
+        onRequestClose={() => {
+          setIsModalVisible(false);
+        }}
       >
         {/* Backdrop: press to close */}
         <View style={styles.addressModalBackdrop}>
@@ -873,9 +965,9 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   budgetSectionTitleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 4,
   },
   budgetSectionTitle: {
@@ -883,12 +975,12 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   cityDropdownContainer: {
-    position: 'relative',
+    position: "relative",
   },
   cityDropdown: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderWidth: 1,
@@ -897,16 +989,16 @@ const styles = StyleSheet.create({
   },
   cityDropdownText: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
     flex: 1,
   },
   dropdownArrow: {
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   cityDropdownMenu: {
-    position: 'absolute',
-    top: '100%',
+    position: "absolute",
+    top: "100%",
     right: 0,
     minWidth: 120,
     borderWidth: 1,
@@ -919,9 +1011,9 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
   cityDropdownItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
@@ -936,24 +1028,24 @@ const styles = StyleSheet.create({
     paddingRight: 20,
   },
   budgetLoadingContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 10,
   },
   loadingText: {
     fontSize: 14,
     marginTop: 10,
-    textAlign: 'center',
+    textAlign: "center",
   },
   budgetNoDataContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 10,
   },
   noDataText: {
     fontSize: 14,
-    textAlign: 'center',
-    fontStyle: 'italic',
+    textAlign: "center",
+    fontStyle: "italic",
   },
   modalContainer: {
     backgroundColor: "#fff",
@@ -1050,32 +1142,32 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   searchContainer: {
-    position: 'relative',
-    flexDirection: 'row',
-    alignItems: 'center',
+    position: "relative",
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
   },
   searchModeButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 12,
     paddingVertical: 12,
     borderRadius: 8,
     gap: 4,
     // minWidth: 80,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   searchModeText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   clearButton: {
-    position: 'absolute',
+    position: "absolute",
     right: 60, // Position before the search mode button
     top: 0,
     bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingHorizontal: 10,
   },
   masjidGrid: {
@@ -1087,11 +1179,11 @@ const styles = StyleSheet.create({
   },
   suggestionsContainer: {
     maxHeight: 200,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderRadius: 8,
     marginTop: 5,
     elevation: 2,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -1100,8 +1192,8 @@ const styles = StyleSheet.create({
     maxHeight: 200,
   },
   suggestionItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     padding: 10,
     borderBottomWidth: 1,
   },
@@ -1116,14 +1208,14 @@ const styles = StyleSheet.create({
   },
   suggestionName: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   suggestionAddress: {
     fontSize: 14,
   },
   centered: {
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     padding: 20,
   },
   message: {
@@ -1131,13 +1223,13 @@ const styles = StyleSheet.create({
   },
   dropdownBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.2)',
-    justifyContent: 'flex-start',
+    backgroundColor: "rgba(0,0,0,0.2)",
+    justifyContent: "flex-start",
     paddingTop: 160, // aligns below header
   },
 
   dropdownModal: {
-    position:'absolute',
+    position: "absolute",
     right: 0,
     top: SCREEN_HEIGHT * 0.26,
     borderWidth: 1,
@@ -1145,9 +1237,8 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     maxHeight: 200,
     elevation: 10,
-    width: '50%',
+    width: "50%",
   },
-
 });
 
 export default Home;

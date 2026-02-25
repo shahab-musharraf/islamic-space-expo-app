@@ -1,15 +1,16 @@
 import { Alert, Platform, ToastAndroid } from "react-native";
 
-export const showMessage = (message:string)=>{
-  if (Platform.OS === 'android') {
+export const showMessage = (message: string) => {
+  console.log(message, "show message");
+  if (Platform.OS === "android") {
     ToastAndroid.show(message, ToastAndroid.SHORT);
   } else {
     // iOS fallback
     Alert.alert(message);
   }
-}
+};
 
-export const  camelToWords = (str:string) => {
+export const camelToWords = (str: string) => {
   if (!str) return "";
 
   // Insert space before capital letters
@@ -17,4 +18,4 @@ export const  camelToWords = (str:string) => {
 
   // Capitalize the first character
   return spaced.charAt(0).toUpperCase() + spaced.slice(1);
-}
+};

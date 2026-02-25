@@ -1,6 +1,6 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { create } from "zustand";
+import { createJSONStorage, persist } from "zustand/middleware";
 
 type FavoriteStore = {
   favorites: string[];
@@ -38,11 +38,9 @@ export const useFavoriteMasjidStore = create<FavoriteStore>()(
         }),
 
       /* ---------- helpers ---------- */
-      isFavorite: (masjidId) =>
-        get().favorites.includes(masjidId),
+      isFavorite: (masjidId) => get().favorites.includes(masjidId),
 
-      isFollowing: (masjidId) =>
-        get().following === masjidId,
+      isFollowing: (masjidId) => get().following === masjidId,
 
       /* ---------- logout / cleanup ---------- */
       reset: () =>
@@ -53,8 +51,8 @@ export const useFavoriteMasjidStore = create<FavoriteStore>()(
         }),
     }),
     {
-      name: 'favorite-masjid-store', // AsyncStorage key
+      name: "favorite-masjid-store", // AsyncStorage key
       storage: createJSONStorage(() => AsyncStorage),
-    }
-  )
+    },
+  ),
 );
